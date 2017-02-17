@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    tools:context="src.collectag_test03.MainActivity">
+    tools:context="src.p4_collectag.MainActivity">
 
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"

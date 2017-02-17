@@ -4,7 +4,6 @@ import android.os.AsyncTask;
 import android.util.Log;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -17,7 +16,6 @@ import cz.msebera.android.httpclient.StatusLine;
 import cz.msebera.android.httpclient.client.HttpClient;
 import cz.msebera.android.httpclient.client.methods.HttpGet;
 import cz.msebera.android.httpclient.impl.client.DefaultHttpClient;
-import src.p4_collectag.MainActivity;
 import src.p4_collectag.StaticEnvironment;
 
 /**
@@ -65,7 +63,7 @@ public class GetBookInfo extends AsyncTask<String, Void, String> {
             JSONObject bookObject = bookArray.getJSONObject(0);
             JSONObject volumeObject = bookObject.getJSONObject("volumeInfo");
             String title = volumeObject.getString("title");
-            StaticEnvironment.mainActivity.toastThis(title);
+            StaticEnvironment.mainActivity.snackThis(title);
         }
         catch (Exception e) {
             e.printStackTrace();
