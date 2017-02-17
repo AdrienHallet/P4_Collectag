@@ -59,9 +59,8 @@ public class MainActivity extends AppCompatActivity
 
         //Test api Access
         //Google api
-        RequestHandler handler = new RequestHandler();
-        GetBookInfo request = new GetBookInfo();
-        request.execute(handler.isbnRequest("9780262220699"));
+       database.addBookISBN("2344011846");
+        //ToDo remove those lines, they're just examples
 
         //OpenLibrary
         BookClient client = new BookClient();

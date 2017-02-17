@@ -24,6 +24,8 @@ import src.p4_collectag.StaticEnvironment;
 
 public class GetBookInfo extends AsyncTask<String, Void, String> {
 
+    public AsyncResponse delegate = null;
+
     @Override
     protected String doInBackground(String... bookURLs) { //... = arbitrary number of args
         StringBuilder bookBuilder = new StringBuilder();
@@ -62,8 +64,7 @@ public class GetBookInfo extends AsyncTask<String, Void, String> {
             JSONArray bookArray = resultObject.getJSONArray("items");
             JSONObject bookObject = bookArray.getJSONObject(0);
             JSONObject volumeObject = bookObject.getJSONObject("volumeInfo");
-            String title = volumeObject.getString("title");
-            StaticEnvironment.mainActivity.snackThis(title);
+            delegate.processFinish(volumeObject.toString());
         }
         catch (Exception e) {
             e.printStackTrace();
