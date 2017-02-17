@@ -118,6 +118,7 @@ public class Database implements AsyncResponse {
                 cursor.moveToNext();
             }
         }
+        cursor.close();
 
         return values;
     }
