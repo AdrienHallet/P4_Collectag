@@ -21,8 +21,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.loopj.android.http.JsonHttpResponseHandler;
@@ -46,22 +44,17 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //set static environment
         StaticEnvironment.setStaticEnvironment(this);
-        //Instantiate Database
         Database database = new Database(getApplicationContext());
 
         database.addBook();
 
-        ArrayList<String> myBooks = new ArrayList<String>();
+        ArrayList<String> myBooks;
         myBooks = database.getAllBooks();
 
         for(String string : myBooks){
             Context context = getApplicationContext();
             int duration = Toast.LENGTH_SHORT;
-
-            //Toast toast = Toast.makeText(context, string, duration);
-            //toast.show();
         }
 
         //Test api Access
@@ -83,15 +76,15 @@ public class MainActivity extends AppCompatActivity
                         // Parse json array into array of model objects
                         final ArrayList<Book> books = Book.fromJson(docs);
 
-                        if(books.isEmpty()) Log.d("Error","No match found");
+                        if(books.isEmpty()) Log.e("ERROR","No match found");
                         for (Book book : books) {
-                            Toast toast = Toast.makeText(getApplicationContext(),book.getTitle(),Toast.LENGTH_LONG);
-                            toast.show();
+                            snackThis(book.getTitle());
                         }
 
                     }
                 } catch (JSONException e) {
                     // Invalid JSON format, show appropriate error.
+                    Log.e("ERROR", "JSON format could not be read.");
                     e.printStackTrace();
                 }
             }
@@ -160,16 +153,17 @@ public class MainActivity extends AppCompatActivity
 
         if (id == R.id.nav_camera) {
             // Handle the camera action
+            snackThis("Pressed button!");//TODO
         } else if (id == R.id.nav_gallery) {
-
+            snackThis("Pressed button!");//TODO
         } else if (id == R.id.nav_slideshow) {
-
+            snackThis("Pressed button!");//TODO
         } else if (id == R.id.nav_manage) {
-
+            snackThis("Pressed button!");//TODO
         } else if (id == R.id.nav_share) {
-
+            snackThis("Pressed button!");//TODO
         } else if (id == R.id.nav_send) {
-
+            snackThis("Pressed button!");//TODO
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -209,8 +203,7 @@ public class MainActivity extends AppCompatActivity
             Log.d("CONTENT: ",scanContent);
 
         }else{
-            Toast toast = Toast.makeText(getApplicationContext(),"No scan data received!", Toast.LENGTH_SHORT);
-            toast.show();
+            snackThis("No scan data received!");
         }
     }
 
@@ -249,10 +242,13 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    public void toastThis(String toasting){
-        Toast toast = Toast.makeText(getApplicationContext(),toasting,Toast.LENGTH_LONG);
-        toast.show();
-
+    /**
+     * Display text in a {@link Snackbar} without action, modern alternative to the old {@link Toast}
+     * @param toasting Text that should be displayed.
+     */
+    public void snackThis(String toasting){
+        Snackbar.make(findViewById(android.R.id.content), toasting, Snackbar.LENGTH_LONG)
+                .show();
     }
 
 
