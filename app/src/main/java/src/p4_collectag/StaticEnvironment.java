@@ -7,7 +7,7 @@ package src.p4_collectag;
 public class StaticEnvironment {
     public static MainActivity mainActivity;
 
-    public static void setStaticEnvironment(MainActivity mainactivity){
+    public static void setStaticEnvironment(MainActivity mainactivity) {
         mainActivity = mainactivity;
     }
 }

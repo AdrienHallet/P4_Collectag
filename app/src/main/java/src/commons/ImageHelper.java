@@ -15,7 +15,7 @@ import cz.msebera.android.httpclient.util.ByteArrayBuffer;
 
 public class ImageHelper {
 
-    public static byte[] getImageFromURL(String url){
+    public static byte[] getImageFromURL(String url) {
         try {
             URL imageUrl = new URL(url);
             URLConnection ucon = imageUrl.openConnection();
@@ -24,7 +24,7 @@ public class ImageHelper {
             BufferedInputStream bis = new BufferedInputStream(is);
 
             ByteArrayBuffer baf = new ByteArrayBuffer(500);
-            int current = 0;
+            int current;
             while ((current = bis.read()) != -1) {
                 baf.append((byte) current);
             }

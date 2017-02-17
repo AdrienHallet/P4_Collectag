@@ -32,10 +32,11 @@ public class RequestHandler {
             e.printStackTrace();
         }
     }
+
     public String isbnRequest(final String query) {
         try {
             String url = getApiUrl("isbn:");
-            return url + URLEncoder.encode(query, "utf-8")+"&Key="+ACCESS_KEY;
+            return url + URLEncoder.encode(query, "utf-8") + "&Key=" + ACCESS_KEY;
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
             return null;

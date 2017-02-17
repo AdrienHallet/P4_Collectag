@@ -4,11 +4,9 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.os.Bundle;
 import android.util.Log;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -26,13 +24,12 @@ import src.p4_collectag.StaticEnvironment;
 
 public class Database implements AsyncResponse {
 
+    SQLiteDatabase db;
     private Context context;
     private BookReaderDbHelper dbHelper;
-    SQLiteDatabase db;
-
     private Book currentBook = null;
 
-    public Database(Context context){
+    public Database(Context context) {
         this.context = context;
         this.dbHelper = new BookReaderDbHelper(context);
     }
@@ -40,7 +37,7 @@ public class Database implements AsyncResponse {
     /**
      * Dummy method, example & test use only
      */
-    public boolean addBook(){
+    public boolean addBook() {
         // Gets the data repository in write mode
         db = dbHelper.getWritableDatabase();
 
@@ -57,18 +54,18 @@ public class Database implements AsyncResponse {
         return true;
     }
 
-    public boolean addBookISBN(String isbn){
+    public boolean addBookISBN(String isbn) {
         db = dbHelper.getWritableDatabase();
 
         ContentValues values = new ContentValues();
-        if(ISBN.isISBN10(isbn)){
+        if (ISBN.isISBN10(isbn)) {
             values.put(BookContract.BookEntry.COLUMN_ISBN_10, isbn);
             values.put(BookContract.BookEntry.COLUMN_ISBN_13, ISBN.convert10to13(isbn));
-        }else if(ISBN.isISBN13(isbn)){
+        } else if (ISBN.isISBN13(isbn)) {
             values.put(BookContract.BookEntry.COLUMN_ISBN_10, ISBN.convert13to10(isbn));
             values.put(BookContract.BookEntry.COLUMN_ISBN_13, isbn);
-        }else{
-            Log.e("ISBN", "Not a valid ISBN :"+isbn);
+        } else {
+            Log.e("ISBN", "Not a valid ISBN :" + isbn);
             return false;
         }
 
@@ -81,10 +78,8 @@ public class Database implements AsyncResponse {
         } catch (InterruptedException e) {
             e.printStackTrace();
             //ToDo Do something with the interruption
-        } catch (ExecutionException e) {
+        } catch (ExecutionException | TimeoutException e) {
             //ToDo Do something when error occurs
-        } catch (TimeoutException e) {
-            //ToDo Do something when response is late
         }
         return true;
 
@@ -92,11 +87,12 @@ public class Database implements AsyncResponse {
 
     /**
      * getAllBooks()
-     *
+     * <p>
      * Return all books in "book" database
+     *
      * @return ArrayList<String>
      */
-    public ArrayList<String> getAllBooks(){
+    public ArrayList<String> getAllBooks() {
         db = dbHelper.getReadableDatabase();
 
         // Define a projection that specifies which columns from the database
@@ -109,10 +105,10 @@ public class Database implements AsyncResponse {
                 BookContract.BookEntry.COLUMN_NAME_SUBTITLE
         };
 
-        Cursor cursor = db.rawQuery("SELECT * FROM "+BookContract.BookEntry.TABLE_NAME,null);
+        Cursor cursor = db.rawQuery("SELECT * FROM " + BookContract.BookEntry.TABLE_NAME, null);
         ArrayList<String> values = new ArrayList<>();
-        if (cursor .moveToFirst()) {
-            while (cursor.isAfterLast() == false) {
+        if (cursor.moveToFirst()) {
+            while (!cursor.isAfterLast()) {
                 String name = cursor.getString(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_TITLE));
                 values.add(name);
                 cursor.moveToNext();
@@ -124,7 +120,7 @@ public class Database implements AsyncResponse {
     }
 
     @Override
-    public void processFinish(String output){
+    public void processFinish(String output) {
         StaticEnvironment.mainActivity.snackThis(output);
         //ToDo Parse result (or change output type and process directly in response creator) into the current book
     }

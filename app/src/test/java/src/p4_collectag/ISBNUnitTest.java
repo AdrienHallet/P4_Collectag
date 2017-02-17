@@ -19,12 +19,13 @@ public class ISBNUnitTest {
         assertEquals(ISBN.isISBN("97801274504079"), false);
         assertEquals(ISBN.isISBN("0"), false);
 
-        assertEquals(ISBN.isISBN10(9780127450407L),false);
-        assertEquals(ISBN.isISBN13(9780127450407L),true);
+        assertEquals(ISBN.isISBN10(9780127450407L), false);
+        assertEquals(ISBN.isISBN13(9780127450407L), true);
     }
+
     @Test
-    public void convert_isCorrect() throws Exception{
-        assertEquals(ISBN.isISBN10("0127450408"),ISBN.isISBN13(ISBN.convert10to13("0127450408"))); //true
-        assertEquals(ISBN.isISBN13("9780127450407"),ISBN.isISBN10(ISBN.convert13to10("9780127450407"))); //true
+    public void convert_isCorrect() throws Exception {
+        assertEquals(ISBN.isISBN10("0127450408"), ISBN.isISBN13(ISBN.convert10to13("0127450408"))); //true
+        assertEquals(ISBN.isISBN13("9780127450407"), ISBN.isISBN10(ISBN.convert13to10("9780127450407"))); //true
     }
 }

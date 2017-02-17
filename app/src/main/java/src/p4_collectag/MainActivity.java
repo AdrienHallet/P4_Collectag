@@ -5,20 +5,21 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.util.Log;
-import android.view.View;
-import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Toast;
 
 import com.google.zxing.integration.android.IntentIntegrator;
@@ -32,8 +33,6 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 
 import cz.msebera.android.httpclient.Header;
-import src.connect.google.GetBookInfo;
-import src.connect.google.RequestHandler;
 import src.connect.openlibrary.Book;
 import src.connect.openlibrary.BookClient;
 import src.database.Database;
@@ -52,14 +51,14 @@ public class MainActivity extends AppCompatActivity
         ArrayList<String> myBooks;
         myBooks = database.getAllBooks();
 
-        for(String string : myBooks){
+        for (String string : myBooks) {
             Context context = getApplicationContext();
             int duration = Toast.LENGTH_SHORT;
         }
 
         //Test api Access
         //Google api
-       database.addBookISBN("2344011846");
+        database.addBookISBN("2344011846");
         //ToDo remove those lines, they're just examples
 
         //OpenLibrary
@@ -68,14 +67,14 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                 try {
-                    JSONArray docs = null;
-                    if(response != null) {
+                    JSONArray docs;
+                    if (response != null) {
                         // Get the docs json array
                         docs = response.getJSONArray("docs");
                         // Parse json array into array of model objects
                         final ArrayList<Book> books = Book.fromJson(docs);
 
-                        if(books.isEmpty()) Log.e("ERROR","No match found");
+                        if (books.isEmpty()) Log.e("ERROR", "No match found");
                         for (Book book : books) {
                             snackThis(book.getTitle());
                         }
@@ -105,7 +104,7 @@ public class MainActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.setDrawerListener(toggle);
+        drawer.addDrawerListener(toggle);
         toggle.syncState();
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
@@ -146,7 +145,7 @@ public class MainActivity extends AppCompatActivity
 
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
-    public boolean onNavigationItemSelected(MenuItem item) {
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
@@ -172,10 +171,11 @@ public class MainActivity extends AppCompatActivity
 
     /**
      * event handler for scan button
+     *
      * @param view view of the activity
      */
-    public void scanNow(View view){
-        if(isCameraAccessible()) {
+    public void scanNow(View view) {
+        if (isCameraAccessible()) {
             IntentIntegrator integrator = new IntentIntegrator(this);
             integrator.setDesiredBarcodeFormats(IntentIntegrator.ONE_D_CODE_TYPES);
             integrator.setPrompt("Scan a barcode");
@@ -198,28 +198,30 @@ public class MainActivity extends AppCompatActivity
             // display it on screen
 
             Log.d("FORMAT: ", scanFormat);
-            System.out.println("Content :"+scanContent);
-            Log.d("CONTENT: ",scanContent);
+            System.out.println("Content :" + scanContent);
+            Log.d("CONTENT: ", scanContent);
 
-        }else{
+        } else {
             snackThis("No scan data received!");
         }
     }
 
-    public boolean isCameraAccessible(){
-        int permissionCheck = ContextCompat.checkSelfPermission(this,Manifest.permission.CAMERA);
-        if(permissionCheck == PackageManager.PERMISSION_GRANTED) return true;
+    public boolean isCameraAccessible() {
+        int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
+        if (permissionCheck == PackageManager.PERMISSION_GRANTED) return true;
         else {
             System.out.println("We got no right to access camera");
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA},1337);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, 1337);
         }
         return false;
 
     }
+
     @Override
     public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
+                                           String permissions[], @NonNull int[] grantResults) {
         switch (requestCode) {
+            //TODO
             case 1337: {
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.length > 0
@@ -243,9 +245,10 @@ public class MainActivity extends AppCompatActivity
 
     /**
      * Display text in a {@link Snackbar} without action, modern alternative to the old {@link Toast}
+     *
      * @param toasting Text that should be displayed.
      */
-    public void snackThis(String toasting){
+    public void snackThis(String toasting) {
         Snackbar.make(findViewById(android.R.id.content), toasting, Snackbar.LENGTH_LONG)
                 .show();
     }

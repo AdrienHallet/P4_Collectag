@@ -31,6 +31,7 @@ public class BookClient {
             e.printStackTrace();
         }
     }
+
     public void getBooksByISBN(final String query, JsonHttpResponseHandler handler) {
         try {
             String url = getApiUrl("search.json?q&isbn=");

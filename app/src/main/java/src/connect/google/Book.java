@@ -17,37 +17,15 @@ public class Book {
     private String author;
     private String title;
 
-    public String getOpenLibraryId() {
-        return openLibraryId;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getAuthor() {
-        return author;
-    }
-
-    // Get medium sized book cover from covers API
-    public String getCoverUrl() {
-        return "http://covers.openlibrary.org/b/olid/" + openLibraryId + "-M.jpg?default=false";
-    }
-
-    // Get large sized book cover from covers API
-    public String getLargeCoverUrl() {
-        return "http://covers.openlibrary.org/b/olid/" + openLibraryId + "-L.jpg?default=false";
-    }
-
     // Returns a Book given the expected JSON
     public static Book fromJson(JSONObject jsonObject) {
         Book book = new Book();
         try {
             // Deserialize json into object fields
             // Check if a cover edition is available
-            if (jsonObject.has("cover_edition_key"))  {
+            if (jsonObject.has("cover_edition_key")) {
                 book.openLibraryId = jsonObject.getString("cover_edition_key");
-            } else if(jsonObject.has("edition_key")) {
+            } else if (jsonObject.has("edition_key")) {
                 final JSONArray ids = jsonObject.getJSONArray("edition_key");
                 book.openLibraryId = ids.getString(0);
             }
@@ -78,11 +56,11 @@ public class Book {
 
     // Decodes array of book json results into business model objects
     public static ArrayList<Book> fromJson(JSONArray jsonArray) {
-        ArrayList<Book> books = new ArrayList<Book>(jsonArray.length());
+        ArrayList<Book> books = new ArrayList<>(jsonArray.length());
         // Process each result in json array, decode and convert to business
         // object
         for (int i = 0; i < jsonArray.length(); i++) {
-            JSONObject bookJson = null;
+            JSONObject bookJson;
             try {
                 bookJson = jsonArray.getJSONObject(i);
             } catch (Exception e) {
@@ -95,5 +73,27 @@ public class Book {
             }
         }
         return books;
+    }
+
+    public String getOpenLibraryId() {
+        return openLibraryId;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    // Get medium sized book cover from covers API
+    public String getCoverUrl() {
+        return "http://covers.openlibrary.org/b/olid/" + openLibraryId + "-M.jpg?default=false";
+    }
+
+    // Get large sized book cover from covers API
+    public String getLargeCoverUrl() {
+        return "http://covers.openlibrary.org/b/olid/" + openLibraryId + "-L.jpg?default=false";
     }
 }
