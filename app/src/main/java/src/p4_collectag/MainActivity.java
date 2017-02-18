@@ -21,7 +21,9 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.ActionMode;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
@@ -44,8 +46,46 @@ import src.database.Database;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
-    private RecyclerView.Adapter mAdapter;
-    private List<ListItem> displayedList;
+    ActionMode mActionMode;
+    Menu context_menu;
+    boolean isMultiSelect = false;
+    private CollectionAdapter mAdapter;
+    private List<ListItem> displayedList = new ArrayList<>();
+    private List<ListItem> selectedList = new ArrayList<>();
+    private ActionMode.Callback mActionModeCallback = new ActionMode.Callback() {
+        @Override
+        public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+            // Inflate a menu resource providing context menu items
+            MenuInflater inflater = mode.getMenuInflater();
+            inflater.inflate(R.menu.menu_multi_select, menu);
+            context_menu = menu;
+            return true;
+        }
+
+        @Override
+        public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+            return false;
+        }
+
+        @Override
+        public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+            switch (item.getItemId()) {
+                case R.id.action_delete:
+                    //TODO DELETE SELECTION
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        @Override
+        public void onDestroyActionMode(ActionMode mode) {
+            mActionMode = null;
+            isMultiSelect = false;
+            selectedList.clear();
+            mAdapter.notifyDataSetChanged();
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,20 +135,8 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-
-        setContentView(R.layout.activity_main);
-        setSupportActionBar((Toolbar) findViewById(R.id.toolbar));
-
-
-        RecyclerView mRecyclerView = (RecyclerView) findViewById(R.id.list);
-
-        mRecyclerView.setHasFixedSize(false);
-
-        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(this);
-        mRecyclerView.setLayoutManager(mLayoutManager);
-
         //FIXME This is a DEBUG LIST
-        displayedList = new ArrayList<>();
+        displayedList.clear();
         for (int i = 0; i < 2; i++) {
             displayedList.add(new ListItem() {
                 @Override
@@ -120,17 +148,48 @@ public class MainActivity extends AppCompatActivity
                 public int getDisplayImage() {
                     return R.drawable.ic_menu_gallery;
                 }
-
-                @Override
-                public void onClick(View view) {
-                    // display a toast with item name on item click
-                    Toast.makeText(view.getContext(), getDisplayText(), Toast.LENGTH_SHORT).show();
-                }
             });
         }
-        mAdapter = new CollectionAdapter(displayedList);
+
+        /// BEGIN
+        setContentView(R.layout.activity_main);
+        setSupportActionBar((Toolbar) findViewById(R.id.toolbar));
+
+        RecyclerView mRecyclerView = (RecyclerView) findViewById(R.id.list);
+
+        mRecyclerView.setHasFixedSize(false);
+
+        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(this);
+        mRecyclerView.setLayoutManager(mLayoutManager);
+
+        mAdapter = new CollectionAdapter(this, displayedList, selectedList);
         mRecyclerView.setAdapter(mAdapter);
 
+        mRecyclerView.addOnItemTouchListener(new RecyclerItemClickListener(this, mRecyclerView, new RecyclerItemClickListener.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(View view, int position) {
+                if (isMultiSelect)
+                    multi_select(position);
+                else
+                    //TODO DISPLAY ITEM DATA
+                    Toast.makeText(getApplicationContext(), "Details Page", Toast.LENGTH_SHORT).show();
+            }
+
+
+            @Override
+            public void onItemLongClick(View view, int position) {
+                if (!isMultiSelect) {
+                    selectedList.clear();
+                    isMultiSelect = true;
+
+                    if (mActionMode == null) {
+                        mActionMode = startActionMode(mActionModeCallback);
+                    }
+                }
+                multi_select(position);
+            }
+        }));
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -141,6 +200,28 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
     }
+
+    /// MULTI SELECT BEGIN
+    public void multi_select(int position) {
+        if (mActionMode != null) {
+            if (selectedList.contains(displayedList.get(position))) {
+                selectedList.remove(displayedList.get(position));
+            } else {
+                selectedList.add(displayedList.get(position));
+            }
+
+            if (selectedList.size() > 0)
+                mActionMode.setTitle("" + selectedList.size());
+            else
+                mActionMode.setTitle("");
+            mAdapter.notifyDataSetChanged();
+        }
+    }
+
+    public void refreshAdapter() {
+        mAdapter.notifyDataSetChanged();
+    }
+    /// MULTI SELECT END
 
     @Override
     public void onBackPressed() {
@@ -181,7 +262,6 @@ public class MainActivity extends AppCompatActivity
                 if (newText == null || newText.length() < 3) {
                     return false;
                 }
-                // Method called when the text in the search view changes.
                 return true;
             }
         });
@@ -209,18 +289,15 @@ public class MainActivity extends AppCompatActivity
                 public int getDisplayImage() {
                     return R.drawable.ic_menu_gallery;
                 }
-
-                @Override
-                public void onClick(View view) {
-                    // display a toast with item name on item click
-                    Toast.makeText(view.getContext(), getDisplayText(), Toast.LENGTH_SHORT).show();
-                }
             });
-            mAdapter.notifyDataSetChanged();
+            mAdapter.notifyItemInserted(displayedList.size() - 1);
         } else if (id == R.id.nav_delete) {
-            snackThis("Deleted!");//TODO
-            displayedList.remove(displayedList.size() - 1);
-            mAdapter.notifyDataSetChanged();
+            if (displayedList.size() > 0) {
+                snackThis("Deleted!");//TODO
+                ListItem deletedItem = displayedList.remove(displayedList.size() - 1);
+                selectedList.remove(deletedItem);
+                mAdapter.notifyItemRemoved(displayedList.size());
+            }
         } else if (id == R.id.nav_gallery) {
             snackThis("Pressed button!");//TODO
         } else if (id == R.id.nav_slideshow) {

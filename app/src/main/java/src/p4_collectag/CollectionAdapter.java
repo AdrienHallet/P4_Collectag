@@ -1,10 +1,13 @@
 package src.p4_collectag;
 
+import android.content.Context;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.util.List;
@@ -13,10 +16,14 @@ import java.util.List;
  * @author Julien Amalaberque
  */
 class CollectionAdapter extends RecyclerView.Adapter<CollectionAdapter.ViewHolder> {
-    private List<ListItem> mDataset;
+    List<ListItem> displayedList;
+    List<ListItem> selectedList;
+    private Context context;
 
-    CollectionAdapter(List<ListItem> listItems) {
-        mDataset = listItems;
+    CollectionAdapter(Context contextIn, List<ListItem> displayedListIn, List<ListItem> selectedListIn) {
+        context = contextIn;
+        displayedList = displayedListIn;
+        selectedList = selectedListIn;
     }
 
     @Override
@@ -31,20 +38,28 @@ class CollectionAdapter extends RecyclerView.Adapter<CollectionAdapter.ViewHolde
     @Override
     public void onBindViewHolder(final ViewHolder holder, int position) {
         // set the data in items
-        holder.mTextView.setText(mDataset.get(position).getDisplayText());
-        holder.mImageView.setImageResource(mDataset.get(position).getDisplayImage());
+        holder.mTextView.setText(displayedList.get(position).getDisplayText());
+        holder.mImageView.setImageResource(displayedList.get(position).getDisplayImage());
+
         // implement setOnClickListener event on item view.
+        /*
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mDataset.get(holder.getAdapterPosition()).onClick(view);
+                displayedList.get(holder.getAdapterPosition()).onClick(view);
             }
         });
+        */
+
+        if (selectedList.contains(displayedList.get(position)))
+            holder.mLayout.setBackgroundColor(ContextCompat.getColor(context, R.color.list_item_selected_state));
+        else
+            holder.mLayout.setBackgroundColor(ContextCompat.getColor(context, R.color.list_item_normal_state));
     }
 
     @Override
     public int getItemCount() {
-        return mDataset.size();
+        return displayedList.size();
     }
 
     /**
@@ -55,11 +70,13 @@ class CollectionAdapter extends RecyclerView.Adapter<CollectionAdapter.ViewHolde
     static class ViewHolder extends RecyclerView.ViewHolder {
         TextView mTextView;
         ImageView mImageView;
+        LinearLayout mLayout;
 
         ViewHolder(View viewIn) {
             super(viewIn);
             mTextView = (TextView) viewIn.findViewById(R.id.name);
             mImageView = (ImageView) viewIn.findViewById(R.id.image);
+            mLayout = (LinearLayout) viewIn.findViewById(R.id.item_row);
         }
     }
 }
