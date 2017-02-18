@@ -1,28 +1,42 @@
 package src.database.object;
 
+import android.text.TextUtils;
+import android.util.Log;
+
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
- * Work still in progress
+ * Represents a book
+ *
+ * @author Adrien
+ * @version 2.00
  */
 
 public class Book {
 
-    public String title;
-    public String author;
-    public String publishedDate;
-    public String description;
-    public String isbn10;
-    public String isbn13;
-    public String pageCount;
-    public String maturityRating;
-    public String language;
-    public String cover;
+    private String title;
+    private String author;
+    private String publishedDate;
+    private String description;
+    private String isbn10;
+    private String isbn13;
+    private String pageCount;
+    private String maturityRating;
+    private String language;
+    private String cover;
 
+    /**
+     * Empty constructor
+     */
     public Book() {
 
     }
 
+    /**
+     * Create a book with specified arguments
+     */
     public Book(String title, String author, String publishedDate, String description, String isbn10, String isbn13, String pageCount, String maturityRating, String language, String cover) {
         this.title = title;
         this.author = author;
@@ -36,8 +50,57 @@ public class Book {
         this.cover = cover;
     }
 
+    /**
+     * Create a book from a JSON file
+     *
+     * @param jsonObject JSON object representing one book (currently supporting Google JSON key only)
+     */
     public Book(JSONObject jsonObject) {
-        //ToDo parse json
+        try {
+            if (jsonObject.has("volumeInfo")) {
+                JSONObject volume = jsonObject.getJSONObject("volumeInfo");
+                this.title = volume.optString("title");
+                this.author = getAuthorList(volume);
+                this.publishedDate = volume.optString("publishedDate");
+                this.description = volume.optString("description");
+                this.pageCount = volume.optString("pageCount");
+                this.maturityRating = volume.optString("maturityRating");
+                this.language = volume.optString("language");
+                this.cover = volume.optJSONObject("imageLinks").optString("thumbnail");
+
+                if (volume.has("industryIdentifiers")) {
+                    JSONArray identifiers = volume.getJSONArray("industryIdentifiers");
+                    for (int i = 0; i < identifiers.length(); i++) {
+                        JSONObject object = identifiers.getJSONObject(i);
+                        if (object.optString("type").equals("ISBN_10")) {
+                            this.isbn10 = object.optString("identifier");
+                        } else if (object.optString("type").equals("ISBN_13")) {
+                            this.isbn13 = object.optString("identifier");
+                        } else {
+                            //ToDo
+                            //Non-ISBN format. Do we need to handle that ?
+                        }
+                    }
+                }
+            }
+        } catch (JSONException e) {
+            Log.e("Book constructor", e.toString());
+        }
+    }
+
+    // Return comma separated author list when there is more than one author
+    private static String getAuthorList(final JSONObject jsonObject) {
+        try {
+            final JSONArray authors = jsonObject.getJSONArray("authors");
+            int numAuthors = authors.length();
+            final String[] authorStrings = new String[numAuthors];
+            for (int i = 0; i < numAuthors; ++i) {
+                authorStrings[i] = authors.getString(i);
+            }
+            return TextUtils.join(", ", authorStrings);
+        } catch (JSONException e) {
+            return "";
+        }
     }
 
     public String getTitle() {

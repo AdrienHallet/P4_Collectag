@@ -7,12 +7,15 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
 /**
- * Created by Adrien on 16/02/2017.
+ * Generate mandatory String requests for Google Book API
+ *
+ * @author Adrien
+ * @version 1.00
  */
 
 public class RequestHandler {
     private static final String API_BASE_URL = "https://www.googleapis.com/books/v1/volumes?q=";
-    private static final String ACCESS_KEY = "AIzaSyDdOB9TPOJi_RwKnMnjrgsMbuXnXu5FpU0";
+    private static final String ACCESS_KEY = "AIzaSyDdOB9TPOJi_RwKnMnjrgsMbuXnXu5FpU0"; //Please don't share
     private AsyncHttpClient client;
 
     public RequestHandler() {
@@ -33,6 +36,12 @@ public class RequestHandler {
         }
     }
 
+    /**
+     * Generate an isbn search on Google Book API
+     *
+     * @param query the isbn you're looking for
+     * @return the request to use on GetBookInfo
+     */
     public String isbnRequest(final String query) {
         try {
             String url = getApiUrl("isbn:");
@@ -42,4 +51,21 @@ public class RequestHandler {
             return null;
         }
     }
+
+    /**
+     * Generate an unspecified search on Google Book API
+     *
+     * @param query the keywords you're looking for
+     * @return the request to use on GetBookInfo
+     */
+    public String getUnspecified(final String query) {
+        try {
+            String url = getApiUrl("");
+            return url + URLEncoder.encode(query, "utf-8") + "&Key=" + ACCESS_KEY;
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
 }

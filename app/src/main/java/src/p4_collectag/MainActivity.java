@@ -56,38 +56,6 @@ public class MainActivity extends AppCompatActivity
             int duration = Toast.LENGTH_SHORT;
         }
 
-        //Test api Access
-        //Google api
-        database.addBookISBN("2344011846");
-        //ToDo remove those lines, they're just examples
-
-        //OpenLibrary
-        BookClient client = new BookClient();
-        client.getBooksByISBN("2344011846", new JsonHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                try {
-                    JSONArray docs;
-                    if (response != null) {
-                        // Get the docs json array
-                        docs = response.getJSONArray("docs");
-                        // Parse json array into array of model objects
-                        final ArrayList<Book> books = Book.fromJson(docs);
-
-                        if (books.isEmpty()) Log.e("ERROR", "No match found");
-                        for (Book book : books) {
-                            snackThis(book.getTitle());
-                        }
-
-                    }
-                } catch (JSONException e) {
-                    // Invalid JSON format, show appropriate error.
-                    Log.e("ERROR", "JSON format could not be read.");
-                    e.printStackTrace();
-                }
-            }
-        });
-
 
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);

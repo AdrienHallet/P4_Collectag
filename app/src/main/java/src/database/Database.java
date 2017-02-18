@@ -22,7 +22,7 @@ import src.p4_collectag.StaticEnvironment;
  * Created by Adrien on 16/02/2017.
  */
 
-public class Database implements AsyncResponse {
+public class Database {
 
     SQLiteDatabase db;
     private Context context;
@@ -52,37 +52,6 @@ public class Database implements AsyncResponse {
         long newRowId = db.insert(BookContract.BookEntry.TABLE_NAME, null, values);
         db.close();
         return true;
-    }
-
-    public boolean addBookISBN(String isbn) {
-        db = dbHelper.getWritableDatabase();
-
-        ContentValues values = new ContentValues();
-        if (ISBN.isISBN10(isbn)) {
-            values.put(BookContract.BookEntry.COLUMN_ISBN_10, isbn);
-            values.put(BookContract.BookEntry.COLUMN_ISBN_13, ISBN.convert10to13(isbn));
-        } else if (ISBN.isISBN13(isbn)) {
-            values.put(BookContract.BookEntry.COLUMN_ISBN_10, ISBN.convert13to10(isbn));
-            values.put(BookContract.BookEntry.COLUMN_ISBN_13, isbn);
-        } else {
-            Log.e("ISBN", "Not a valid ISBN :" + isbn);
-            return false;
-        }
-
-        RequestHandler handler = new RequestHandler();
-        GetBookInfo request = new GetBookInfo();
-        request.delegate = this; //claim to receive response here
-        request.execute(handler.isbnRequest(isbn));
-        try {
-            request.get(1000, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            //ToDo Do something with the interruption
-        } catch (ExecutionException | TimeoutException e) {
-            //ToDo Do something when error occurs
-        }
-        return true;
-
     }
 
     /**
@@ -117,12 +86,6 @@ public class Database implements AsyncResponse {
         cursor.close();
 
         return values;
-    }
-
-    @Override
-    public void processFinish(String output) {
-        StaticEnvironment.mainActivity.snackThis(output);
-        //ToDo Parse result (or change output type and process directly in response creator) into the current book
     }
 
 }

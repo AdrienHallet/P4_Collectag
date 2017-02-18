@@ -9,6 +9,7 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 
 import cz.msebera.android.httpclient.HttpEntity;
 import cz.msebera.android.httpclient.HttpResponse;
@@ -17,8 +18,34 @@ import cz.msebera.android.httpclient.client.HttpClient;
 import cz.msebera.android.httpclient.client.methods.HttpGet;
 import cz.msebera.android.httpclient.impl.client.HttpClientBuilder;
 
+import src.database.object.Book;
+
 /**
- * Created by Adrien on 16/02/2017.
+ * Google book API <br />
+ * <h1>How to use the API ?</h1>
+ * Quick guide on the usage of this API.
+ * The API is threaded for non-blocking usage, especially with slow internet
+ * <h2>1. Generate request String</h2>
+ * <ul>
+ * <li>Create new RequestHandler</li>
+ * <li>Get request String (see RequestHandler)</li>
+ * </ul>
+ * <h2>2. Execute request</h2>
+ * <ul>
+ * <li>Create new GetBookInfo</li>
+ * <li>Call method execute() method with the request String as parameter</li>
+ * </ul>
+ * <h2>3. Retrieve Book list</h2>
+ * <ul>
+ * <li>Your calling class must implement AsyncResponse interface</li>
+ * <li>Call method get() on GetBookInfo object (timeout available)</li>
+ * <li>Override method processFinish(ArrayList<src.database.object.Book> output)</li>
+ * <li>Do something with the ArrayList of books</li>
+ * <p>
+ * </ul>
+ *
+ * @author Adrien
+ * @version 1.00
  */
 
 public class GetBookInfo extends AsyncTask<String, Void, String> {
@@ -62,9 +89,13 @@ public class GetBookInfo extends AsyncTask<String, Void, String> {
         try {
             JSONObject resultObject = new JSONObject(result);
             JSONArray bookArray = resultObject.getJSONArray("items");
-            JSONObject bookObject = bookArray.getJSONObject(0);
-            JSONObject volumeObject = bookObject.getJSONObject("volumeInfo");
-            delegate.processFinish(volumeObject.toString());
+            ArrayList<Book> bookList = new ArrayList<>();
+            for (int i = 0; i < bookArray.length(); i++) {
+                JSONObject bookObject = bookArray.getJSONObject(i);
+                src.database.object.Book book = new src.database.object.Book(bookObject);
+                bookList.add(book);
+            }
+            delegate.processFinish(bookList);
         } catch (Exception e) {
             e.printStackTrace();
 
