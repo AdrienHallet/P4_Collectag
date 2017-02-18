@@ -16,11 +16,14 @@ import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Toast;
 
 import com.google.zxing.integration.android.IntentIntegrator;
@@ -32,6 +35,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import cz.msebera.android.httpclient.Header;
 import src.connect.openlibrary.Book;
@@ -40,6 +44,8 @@ import src.database.Database;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
+    private RecyclerView.Adapter mAdapter;
+    private List<ListItem> displayedList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,6 +98,39 @@ public class MainActivity extends AppCompatActivity
 
         setContentView(R.layout.activity_main);
         setSupportActionBar((Toolbar) findViewById(R.id.toolbar));
+
+
+        RecyclerView mRecyclerView = (RecyclerView) findViewById(R.id.list);
+
+        mRecyclerView.setHasFixedSize(false);
+
+        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(this);
+        mRecyclerView.setLayoutManager(mLayoutManager);
+
+        //FIXME This is a DEBUG LIST
+        displayedList = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            displayedList.add(new ListItem() {
+                @Override
+                public int getDisplayText() {
+                    return R.string.default_item_name;
+                }
+
+                @Override
+                public int getDisplayImage() {
+                    return R.drawable.ic_menu_gallery;
+                }
+
+                @Override
+                public void onClick(View view) {
+                    // display a toast with item name on item click
+                    Toast.makeText(view.getContext(), getDisplayText(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+        mAdapter = new CollectionAdapter(displayedList);
+        mRecyclerView.setAdapter(mAdapter);
+
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -151,19 +190,42 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.nav_camera) {
+        if (id == R.id.nav_scan) {
             scanNow();
+        } else if (id == R.id.nav_add) {
+            snackThis("Added!");//TODO
+            displayedList.add(new ListItem() {
+                @Override
+                public int getDisplayText() {
+                    return R.string.default_item_name;
+                }
+
+                @Override
+                public int getDisplayImage() {
+                    return R.drawable.ic_menu_gallery;
+                }
+
+                @Override
+                public void onClick(View view) {
+                    // display a toast with item name on item click
+                    Toast.makeText(view.getContext(), getDisplayText(), Toast.LENGTH_SHORT).show();
+                }
+            });
+            mAdapter.notifyDataSetChanged();
+        } else if (id == R.id.nav_delete) {
+            snackThis("Deleted!");//TODO
+            displayedList.remove(displayedList.size() - 1);
+            mAdapter.notifyDataSetChanged();
         } else if (id == R.id.nav_gallery) {
             snackThis("Pressed button!");//TODO
         } else if (id == R.id.nav_slideshow) {
             snackThis("Pressed button!");//TODO
-        } else if (id == R.id.nav_manage) {
+        } else if (id == R.id.nav_settings) {
             snackThis("Pressed button!");//TODO
         } else if (id == R.id.nav_share) {
             snackThis("Pressed button!");//TODO
@@ -176,10 +238,7 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
-    /**
-     * event handler for scan button
-     */
-    public void scanNow() {
+    private void scanNow() {
         if (isCameraAccessible()) {
             IntentIntegrator integrator = new IntentIntegrator(this);
             integrator.setDesiredBarcodeFormats(IntentIntegrator.ONE_D_CODE_TYPES);
@@ -191,6 +250,7 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    @Override
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         //retrieve scan result
         IntentResult scanningResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
@@ -211,7 +271,7 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    public boolean isCameraAccessible() {
+    private boolean isCameraAccessible() {
         int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
         if (permissionCheck == PackageManager.PERMISSION_GRANTED) return true;
         else {
@@ -219,7 +279,6 @@ public class MainActivity extends AppCompatActivity
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, 1337);
         }
         return false;
-
     }
 
     @Override
@@ -257,6 +316,4 @@ public class MainActivity extends AppCompatActivity
         Snackbar.make(findViewById(android.R.id.content), toasting, Snackbar.LENGTH_LONG)
                 .show();
     }
-
-
 }
