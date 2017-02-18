@@ -1,23 +1,29 @@
 package src.p4_collectag;
 
 import android.Manifest;
+import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GravityCompat;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.ActionMode;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
@@ -31,6 +37,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import cz.msebera.android.httpclient.Header;
 import src.connect.openlibrary.Book;
@@ -39,6 +48,54 @@ import src.database.Database;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
+    ActionMode mActionMode;
+    Menu context_menu;
+    boolean isMultiSelect = false;
+    private CollectionAdapter mAdapter;
+    private final List<ListItem> displayedList = new ArrayList<>();
+    private final Set<ListItem> selectedItems = new HashSet<>();
+    private ActionMode.Callback mActionModeCallback = new ActionMode.Callback() {
+        @Override
+        public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+            // Inflate a menu resource providing context menu items
+            MenuInflater inflater = mode.getMenuInflater();
+            inflater.inflate(R.menu.menu_multi_select, menu);
+            context_menu = menu;
+            return true;
+        }
+
+        @Override
+        public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+            return false;
+        }
+
+        @Override
+        public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+            switch (item.getItemId()) {
+                case R.id.action_delete:
+                    List<ListItem> remainingItems = new ArrayList<>();
+                    for(ListItem listItem : displayedList) {
+                        if(!selectedItems.contains(listItem)) {
+                            remainingItems.add(listItem);
+                        }
+                    }
+                    displayedList.clear();
+                    displayedList.addAll(remainingItems);
+                    clearSelection();
+                    mAdapter.notifyDataSetChanged();
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        @Override
+        public void onDestroyActionMode(ActionMode mode) {
+            mActionMode = null;
+            isMultiSelect = false;
+            clearSelection();
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,27 +113,92 @@ public class MainActivity extends AppCompatActivity
             int duration = Toast.LENGTH_SHORT;
         }
 
+        //FIXME This is a DEBUG LIST
+        displayedList.clear();
+        for (int i = 0; i < 2; i++) {
+            displayedList.add(new ListItem() {
+                @Override
+                public int getDisplayText() {
+                    return R.string.default_item_name;
+                }
 
+                @Override
+                public int getDisplayImage() {
+                    return R.drawable.ic_menu_gallery;
+                }
+            });
+        }
+
+        /// BEGIN
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+        setSupportActionBar((Toolbar) findViewById(R.id.toolbar));
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.add_content);
-        fab.setOnClickListener(new View.OnClickListener() {
+        RecyclerView mRecyclerView = (RecyclerView) findViewById(R.id.list);
+
+        mRecyclerView.setHasFixedSize(false);
+
+        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(this);
+        mRecyclerView.setLayoutManager(mLayoutManager);
+
+        mAdapter = new CollectionAdapter(this, displayedList, selectedItems);
+        mRecyclerView.setAdapter(mAdapter);
+
+        mRecyclerView.addOnItemTouchListener(new RecyclerItemClickListener(this, mRecyclerView, new RecyclerItemClickListener.OnItemClickListener() {
+
             @Override
-            public void onClick(View view) {
-                scanNow(view);
+            public void onItemClick(View view, int position) {
+                if (isMultiSelect)
+                    toggleSelection(position);
+                else
+                    //TODO DISPLAY ITEM DATA
+                    Toast.makeText(getApplicationContext(), "Details Page", Toast.LENGTH_SHORT).show();
             }
-        });
+
+
+            @Override
+            public void onItemLongClick(View view, int position) {
+                if (!isMultiSelect) {
+                    if(selectedItems.size() > 0)
+                    {
+                         clearSelection();
+                    }
+                    isMultiSelect = true;
+
+                    if (mActionMode == null) {
+                        mActionMode = startActionMode(mActionModeCallback);
+                    }
+                }
+                toggleSelection(position);
+            }
+        }));
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+                this, drawer, (Toolbar) findViewById(R.id.toolbar), R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+    }
+
+    public void toggleSelection(int position) {
+        if (mActionMode != null) {
+            ListItem item = displayedList.get(position);
+            if (selectedItems.contains(item)) {
+                selectedItems.remove(item);
+            } else {
+                selectedItems.add(item);
+            }
+
+            mActionMode.setTitle("Items selected : " + selectedItems.size());
+            mAdapter.notifyItemChanged(position);
+        }
+    }
+
+    public void clearSelection() {
+        selectedItems.clear();
+        mAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -91,40 +213,67 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
+        getMenuInflater().inflate(R.menu.menu_search, menu);
+        MenuItem searchItem = menu.findItem(R.id.action_search);
+        MenuItemCompat.setOnActionExpandListener(searchItem, new MenuItemCompat.OnActionExpandListener() {
+            @Override
+            public boolean onMenuItemActionExpand(MenuItem item) {
+                return true;
+            }
+
+            @Override
+            public boolean onMenuItemActionCollapse(MenuItem item) {
+                return true;
+            }
+        });
+        final SearchView searchView = (SearchView) searchItem.getActionView();
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            //TODO Here we choose if we search directly when user types or/and when he clicks on submit
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                searchView.clearFocus();
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                if (newText == null || newText.length() < 3) {
+                    return false;
+                }
+                return true;
+            }
+        });
+        final SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
         return true;
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-    @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.nav_camera) {
-            // Handle the camera action
-            snackThis("Pressed button!");//TODO
+        if (id == R.id.nav_scan) {
+            scanNow();
+        } else if (id == R.id.nav_add) {
+            snackThis("Added!");//TODO
+            displayedList.add(new ListItem() {
+                @Override
+                public int getDisplayText() {
+                    return R.string.default_item_name;
+                }
+
+                @Override
+                public int getDisplayImage() {
+                    return R.drawable.ic_menu_gallery;
+                }
+            });
+            mAdapter.notifyItemInserted(displayedList.size() - 1);
         } else if (id == R.id.nav_gallery) {
             snackThis("Pressed button!");//TODO
         } else if (id == R.id.nav_slideshow) {
             snackThis("Pressed button!");//TODO
-        } else if (id == R.id.nav_manage) {
+        } else if (id == R.id.nav_settings) {
             snackThis("Pressed button!");//TODO
         } else if (id == R.id.nav_share) {
             snackThis("Pressed button!");//TODO
@@ -137,12 +286,7 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
-    /**
-     * event handler for scan button
-     *
-     * @param view view of the activity
-     */
-    public void scanNow(View view) {
+    private void scanNow() {
         if (isCameraAccessible()) {
             IntentIntegrator integrator = new IntentIntegrator(this);
             integrator.setDesiredBarcodeFormats(IntentIntegrator.ONE_D_CODE_TYPES);
@@ -154,6 +298,7 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    @Override
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         //retrieve scan result
         IntentResult scanningResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
@@ -174,7 +319,7 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    public boolean isCameraAccessible() {
+    private boolean isCameraAccessible() {
         int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
         if (permissionCheck == PackageManager.PERMISSION_GRANTED) return true;
         else {
@@ -182,7 +327,6 @@ public class MainActivity extends AppCompatActivity
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, 1337);
         }
         return false;
-
     }
 
     @Override
@@ -220,6 +364,4 @@ public class MainActivity extends AppCompatActivity
         Snackbar.make(findViewById(android.R.id.content), toasting, Snackbar.LENGTH_LONG)
                 .show();
     }
-
-
 }

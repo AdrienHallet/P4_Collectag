@@ -1,18 +1,21 @@
 <resources>
-    <string name="app_name">P4_collectag</string>
+    <string name="app_name">CollecTag</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
 
-    <string name="action_settings">Settings</string>
-    <string name="tools">Tools</string>
-    <string name="slideshow">Slideshow</string>
-    <string name="gallery">Gallery</string>
-    <string name="import_data">Import Data</string>
-    <string name="communicate">Communicate</string>
-    <string name="share">Share</string>
-    <string name="send">Send</string>
+    <string name="nav_scan">Scan</string>
+    <string name="nav_add">Add</string>
+    <string name="nav_delete">Delete</string>
+    <string name="nav_gallery">Gallery</string>
+    <string name="nav_slideshow">Slideshow</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_communicate">Communicate</string>
+    <string name="nav_communicate_share">Share</string>
+    <string name="nav_communicate_send">Send</string>
+
     <string name="categories">Categories</string>
     <string name="last_added">Last Added</string>
-    <string name="menu_camera_icon">Menu Camera Icon</string>
+    <string name="menu_search">Search</string>
+    <string name="default_item_name">Default Item Name</string>
 </resources>
