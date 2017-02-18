@@ -11,19 +11,20 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Julien Amalaberque
  */
 class CollectionAdapter extends RecyclerView.Adapter<CollectionAdapter.ViewHolder> {
-    List<ListItem> displayedList;
-    List<ListItem> selectedList;
+    private final List<ListItem> displayedList;
+    private final Set<ListItem> selectedItems;
     private Context context;
 
-    CollectionAdapter(Context contextIn, List<ListItem> displayedListIn, List<ListItem> selectedListIn) {
+    CollectionAdapter(Context contextIn, List<ListItem> displayedListIn, Set<ListItem> selectedItemsIn) {
         context = contextIn;
         displayedList = displayedListIn;
-        selectedList = selectedListIn;
+        selectedItems = selectedItemsIn;
     }
 
     @Override
@@ -31,7 +32,6 @@ class CollectionAdapter extends RecyclerView.Adapter<CollectionAdapter.ViewHolde
                                                            int viewType) {
         View v = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_row, parent, false);
-        //TODO set the view's size, margins, paddings and layout parameters
         return new ViewHolder(v);
     }
 
@@ -41,17 +41,8 @@ class CollectionAdapter extends RecyclerView.Adapter<CollectionAdapter.ViewHolde
         holder.mTextView.setText(displayedList.get(position).getDisplayText());
         holder.mImageView.setImageResource(displayedList.get(position).getDisplayImage());
 
-        // implement setOnClickListener event on item view.
-        /*
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                displayedList.get(holder.getAdapterPosition()).onClick(view);
-            }
-        });
-        */
-
-        if (selectedList.contains(displayedList.get(position)))
+        ListItem item = displayedList.get(position);
+        if (selectedItems.contains(item))
             holder.mLayout.setBackgroundColor(ContextCompat.getColor(context, R.color.list_item_selected_state));
         else
             holder.mLayout.setBackgroundColor(ContextCompat.getColor(context, R.color.list_item_normal_state));

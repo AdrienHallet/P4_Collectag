@@ -37,7 +37,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import cz.msebera.android.httpclient.Header;
 import src.connect.openlibrary.Book;
@@ -50,8 +52,8 @@ public class MainActivity extends AppCompatActivity
     Menu context_menu;
     boolean isMultiSelect = false;
     private CollectionAdapter mAdapter;
-    private List<ListItem> displayedList = new ArrayList<>();
-    private List<ListItem> selectedList = new ArrayList<>();
+    private final List<ListItem> displayedList = new ArrayList<>();
+    private final Set<ListItem> selectedItems = new HashSet<>();
     private ActionMode.Callback mActionModeCallback = new ActionMode.Callback() {
         @Override
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
@@ -71,7 +73,16 @@ public class MainActivity extends AppCompatActivity
         public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
             switch (item.getItemId()) {
                 case R.id.action_delete:
-                    //TODO DELETE SELECTION
+                    List<ListItem> remainingItems = new ArrayList<>();
+                    for(ListItem listItem : displayedList) {
+                        if(!selectedItems.contains(listItem)) {
+                            remainingItems.add(listItem);
+                        }
+                    }
+                    displayedList.clear();
+                    displayedList.addAll(remainingItems);
+                    clearSelection();
+                    mAdapter.notifyDataSetChanged();
                     return true;
                 default:
                     return false;
@@ -82,8 +93,7 @@ public class MainActivity extends AppCompatActivity
         public void onDestroyActionMode(ActionMode mode) {
             mActionMode = null;
             isMultiSelect = false;
-            selectedList.clear();
-            mAdapter.notifyDataSetChanged();
+            clearSelection();
         }
     };
 
@@ -162,7 +172,7 @@ public class MainActivity extends AppCompatActivity
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(mLayoutManager);
 
-        mAdapter = new CollectionAdapter(this, displayedList, selectedList);
+        mAdapter = new CollectionAdapter(this, displayedList, selectedItems);
         mRecyclerView.setAdapter(mAdapter);
 
         mRecyclerView.addOnItemTouchListener(new RecyclerItemClickListener(this, mRecyclerView, new RecyclerItemClickListener.OnItemClickListener() {
@@ -170,7 +180,7 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onItemClick(View view, int position) {
                 if (isMultiSelect)
-                    multi_select(position);
+                    toggleSelection(position);
                 else
                     //TODO DISPLAY ITEM DATA
                     Toast.makeText(getApplicationContext(), "Details Page", Toast.LENGTH_SHORT).show();
@@ -180,14 +190,17 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onItemLongClick(View view, int position) {
                 if (!isMultiSelect) {
-                    selectedList.clear();
+                    if(selectedItems.size() > 0)
+                    {
+                         clearSelection();
+                    }
                     isMultiSelect = true;
 
                     if (mActionMode == null) {
                         mActionMode = startActionMode(mActionModeCallback);
                     }
                 }
-                multi_select(position);
+                toggleSelection(position);
             }
         }));
 
@@ -201,27 +214,24 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
     }
 
-    /// MULTI SELECT BEGIN
-    public void multi_select(int position) {
+    public void toggleSelection(int position) {
         if (mActionMode != null) {
-            if (selectedList.contains(displayedList.get(position))) {
-                selectedList.remove(displayedList.get(position));
+            ListItem item = displayedList.get(position);
+            if (selectedItems.contains(item)) {
+                selectedItems.remove(item);
             } else {
-                selectedList.add(displayedList.get(position));
+                selectedItems.add(item);
             }
 
-            if (selectedList.size() > 0)
-                mActionMode.setTitle("" + selectedList.size());
-            else
-                mActionMode.setTitle("");
-            mAdapter.notifyDataSetChanged();
+            mActionMode.setTitle("Items selected : " + selectedItems.size());
+            mAdapter.notifyItemChanged(position);
         }
     }
 
-    public void refreshAdapter() {
+    public void clearSelection() {
+        selectedItems.clear();
         mAdapter.notifyDataSetChanged();
     }
-    /// MULTI SELECT END
 
     @Override
     public void onBackPressed() {
@@ -291,13 +301,6 @@ public class MainActivity extends AppCompatActivity
                 }
             });
             mAdapter.notifyItemInserted(displayedList.size() - 1);
-        } else if (id == R.id.nav_delete) {
-            if (displayedList.size() > 0) {
-                snackThis("Deleted!");//TODO
-                ListItem deletedItem = displayedList.remove(displayedList.size() - 1);
-                selectedList.remove(deletedItem);
-                mAdapter.notifyItemRemoved(displayedList.size());
-            }
         } else if (id == R.id.nav_gallery) {
             snackThis("Pressed button!");//TODO
         } else if (id == R.id.nav_slideshow) {
