@@ -5,31 +5,39 @@
         <item
             android:id="@+id/nav_camera"
             android:icon="@drawable/ic_menu_camera"
-            android:title="@string/import_data" />
+            android:title="@string/menu_scan" />
+        <item
+            android:id="@+id/menu_add"
+            android:icon="@android:drawable/ic_menu_add"
+            android:title="@string/menu_add" />
+        <item
+            android:id="@+id/menu_delete"
+            android:icon="@android:drawable/ic_menu_delete"
+            android:title="@string/menu_delete" />
         <item
             android:id="@+id/nav_gallery"
             android:icon="@drawable/ic_menu_gallery"
-            android:title="@string/gallery" />
+            android:title="@string/menu_gallery" />
         <item
             android:id="@+id/nav_slideshow"
             android:icon="@drawable/ic_menu_slideshow"
-            android:title="@string/slideshow" />
+            android:title="@string/menu_slideshow" />
         <item
             android:id="@+id/nav_manage"
             android:icon="@drawable/ic_menu_manage"
-            android:title="@string/tools" />
+            android:title="@string/menu_settings" />
     </group>
 
-    <item android:title="@string/communicate">
+    <item android:title="@string/menu_communicate">
         <menu>
             <item
                 android:id="@+id/nav_share"
                 android:icon="@drawable/ic_menu_share"
-                android:title="@string/share" />
+                android:title="@string/menu_communicate_share" />
             <item
                 android:id="@+id/nav_send"
                 android:icon="@drawable/ic_menu_send"
-                android:title="@string/send" />
+                android:title="@string/menu_communicate_send" />
         </menu>
     </item>
 
