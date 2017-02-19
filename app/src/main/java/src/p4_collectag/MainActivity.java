@@ -151,7 +151,7 @@ public class MainActivity extends AppCompatActivity
                 } else {
                     //TODO DISPLAY ITEM DATA
                     ViewModel item = mAdapter.get(position);
-                    Toast.makeText(getApplicationContext(), "Data :" + getResources().getString(item.getDisplayText()), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext(), "Data : " + getResources().getString(item.getDisplayText()), Toast.LENGTH_SHORT).show();
                 }
             }
 
@@ -288,19 +288,17 @@ public class MainActivity extends AppCompatActivity
         //retrieve scan result
         IntentResult scanningResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
 
-        if (scanningResult != null) {
+        if (scanningResult != null && resultCode == RESULT_OK && scanningResult.getContents() != null) {
             //we have a result
             String scanContent = scanningResult.getContents();
             String scanFormat = scanningResult.getFormatName();
 
             // display it on screen
-
             Log.d("FORMAT: ", scanFormat);
             System.out.println("Content :" + scanContent);
             Log.d("CONTENT: ", scanContent);
-
         } else {
-            snackThis("No scan data received!");
+            snackThis("No scan data was retrieved");
         }
     }
 
