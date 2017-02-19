@@ -30,30 +30,29 @@ import android.widget.Toast;
 
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
-import com.loopj.android.http.JsonHttpResponseHandler;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import cz.msebera.android.httpclient.Header;
-import src.connect.openlibrary.Book;
-import src.connect.openlibrary.BookClient;
 import src.database.Database;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
+    private final Set<ViewModel> itemSet = new HashSet<>();//TODO implement ViewModel for Books, DVDs..
+    private final Comparator<ViewModel> alphabeticalComparator = new Comparator<ViewModel>() {
+        @Override
+        public int compare(ViewModel a, ViewModel b) {
+            return getResources().getString(a.getDisplayText()).compareTo(
+                    getResources().getString(b.getDisplayText()));
+        }
+    };
     ActionMode mActionMode;
     Menu context_menu;
     boolean isMultiSelect = false;
     private CollectionAdapter mAdapter;
-    private final List<ListItem> displayedList = new ArrayList<>();
-    private final Set<ListItem> selectedItems = new HashSet<>();
     private ActionMode.Callback mActionModeCallback = new ActionMode.Callback() {
         @Override
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
@@ -73,16 +72,8 @@ public class MainActivity extends AppCompatActivity
         public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
             switch (item.getItemId()) {
                 case R.id.action_delete:
-                    List<ListItem> remainingItems = new ArrayList<>();
-                    for(ListItem listItem : displayedList) {
-                        if(!selectedItems.contains(listItem)) {
-                            remainingItems.add(listItem);
-                        }
-                    }
-                    displayedList.clear();
-                    displayedList.addAll(remainingItems);
-                    clearSelection();
-                    mAdapter.notifyDataSetChanged();
+                    itemSet.removeAll(mAdapter.deleteSelection());
+                    mActionMode.setTitle("Items selected : " + mAdapter.getSelectedCount());
                     return true;
                 default:
                     return false;
@@ -93,7 +84,7 @@ public class MainActivity extends AppCompatActivity
         public void onDestroyActionMode(ActionMode mode) {
             mActionMode = null;
             isMultiSelect = false;
-            clearSelection();
+            mAdapter.clearSelection();
         }
     };
 
@@ -113,21 +104,6 @@ public class MainActivity extends AppCompatActivity
             int duration = Toast.LENGTH_SHORT;
         }
 
-        //FIXME This is a DEBUG LIST
-        displayedList.clear();
-        for (int i = 0; i < 2; i++) {
-            displayedList.add(new ListItem() {
-                @Override
-                public int getDisplayText() {
-                    return R.string.default_item_name;
-                }
-
-                @Override
-                public int getDisplayImage() {
-                    return R.drawable.ic_menu_gallery;
-                }
-            });
-        }
 
         /// BEGIN
         setContentView(R.layout.activity_main);
@@ -140,35 +116,60 @@ public class MainActivity extends AppCompatActivity
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(mLayoutManager);
 
-        mAdapter = new CollectionAdapter(this, displayedList, selectedItems);
+        mAdapter = new CollectionAdapter(this, alphabeticalComparator);
         mRecyclerView.setAdapter(mAdapter);
 
-        mRecyclerView.addOnItemTouchListener(new RecyclerItemClickListener(this, mRecyclerView, new RecyclerItemClickListener.OnItemClickListener() {
+        //FIXME This is a DEBUG LIST
+        itemSet.clear();
+        for (int i = 0; i < 2; i++) {
+            ViewModel model = new ExampleModel();
+            itemSet.add(model);
+            mAdapter.add(model);
+        }
+        ViewModel model = new ViewModel() {
+            @Override
+            public int getDisplayText() {
+                return R.string.nav_gallery;//FIXME Test name for filtering
+            }
 
             @Override
+            public int getDisplayImage() {
+                return R.drawable.ic_menu_gallery;
+            }
+        };
+        itemSet.add(model);
+        mAdapter.add(model);
+
+        mRecyclerView.addOnItemTouchListener(new RecyclerItemClickListener(this, mRecyclerView, new RecyclerItemClickListener.OnItemClickListener() {
+            @Override
             public void onItemClick(View view, int position) {
-                if (isMultiSelect)
-                    toggleSelection(position);
-                else
+                if (isMultiSelect) {
+                    if (mActionMode != null) {
+                        mAdapter.toggleSelection(position);
+                        mActionMode.setTitle("Items selected : " + mAdapter.getSelectedCount());
+                    }
+                } else {
                     //TODO DISPLAY ITEM DATA
-                    Toast.makeText(getApplicationContext(), "Details Page", Toast.LENGTH_SHORT).show();
+                    ViewModel item = mAdapter.get(position);
+                    Toast.makeText(getApplicationContext(), "Data :" + getResources().getString(item.getDisplayText()), Toast.LENGTH_SHORT).show();
+                }
             }
 
 
             @Override
             public void onItemLongClick(View view, int position) {
                 if (!isMultiSelect) {
-                    if(selectedItems.size() > 0)
-                    {
-                         clearSelection();
-                    }
+                    mAdapter.clearSelection();
                     isMultiSelect = true;
 
                     if (mActionMode == null) {
                         mActionMode = startActionMode(mActionModeCallback);
                     }
                 }
-                toggleSelection(position);
+                if (mActionMode != null) {
+                    mAdapter.toggleSelection(position);
+                    mActionMode.setTitle("Items selected : " + mAdapter.getSelectedCount());
+                }
             }
         }));
 
@@ -182,24 +183,6 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
     }
 
-    public void toggleSelection(int position) {
-        if (mActionMode != null) {
-            ListItem item = displayedList.get(position);
-            if (selectedItems.contains(item)) {
-                selectedItems.remove(item);
-            } else {
-                selectedItems.add(item);
-            }
-
-            mActionMode.setTitle("Items selected : " + selectedItems.size());
-            mAdapter.notifyItemChanged(position);
-        }
-    }
-
-    public void clearSelection() {
-        selectedItems.clear();
-        mAdapter.notifyDataSetChanged();
-    }
 
     @Override
     public void onBackPressed() {
@@ -228,7 +211,6 @@ public class MainActivity extends AppCompatActivity
         });
         final SearchView searchView = (SearchView) searchItem.getActionView();
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            //TODO Here we choose if we search directly when user types or/and when he clicks on submit
             @Override
             public boolean onQueryTextSubmit(String query) {
                 searchView.clearFocus();
@@ -237,9 +219,21 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                if (newText == null || newText.length() < 3) {
+                if (newText == null) {
                     return false;
                 }
+                List<ViewModel> allItems = new ArrayList<>();
+                allItems.addAll(itemSet);
+                mAdapter.filter(allItems, newText);
+                return true;
+            }
+        });
+        searchView.setOnCloseListener(new SearchView.OnCloseListener() {
+            @Override
+            public boolean onClose() {
+                List<ViewModel> allItems = new ArrayList<>();
+                allItems.addAll(itemSet);
+                mAdapter.filter(allItems, "");
                 return true;
             }
         });
@@ -256,19 +250,10 @@ public class MainActivity extends AppCompatActivity
         if (id == R.id.nav_scan) {
             scanNow();
         } else if (id == R.id.nav_add) {
-            snackThis("Added!");//TODO
-            displayedList.add(new ListItem() {
-                @Override
-                public int getDisplayText() {
-                    return R.string.default_item_name;
-                }
-
-                @Override
-                public int getDisplayImage() {
-                    return R.drawable.ic_menu_gallery;
-                }
-            });
-            mAdapter.notifyItemInserted(displayedList.size() - 1);
+            snackThis("Added debug item!");//TODO
+            ViewModel model = new ExampleModel();
+            itemSet.add(model);
+            mAdapter.add(model);
         } else if (id == R.id.nav_gallery) {
             snackThis("Pressed button!");//TODO
         } else if (id == R.id.nav_slideshow) {

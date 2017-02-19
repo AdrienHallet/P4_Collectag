@@ -4,19 +4,10 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.util.Log;
 
 import java.util.ArrayList;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
-import src.commons.ISBN;
-import src.connect.google.AsyncResponse;
 import src.connect.google.Book;
-import src.connect.google.GetBookInfo;
-import src.connect.google.RequestHandler;
-import src.p4_collectag.StaticEnvironment;
 
 /**
  * Created by Adrien on 16/02/2017.
