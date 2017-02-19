@@ -4,10 +4,11 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
 
 import java.util.ArrayList;
 
-import src.connect.google.Book;
+import src.database.object.Book;
 
 /**
  * Created by Adrien on 16/02/2017.
@@ -16,31 +17,54 @@ import src.connect.google.Book;
 public class Database {
 
     SQLiteDatabase db;
-    private Context context;
     private BookReaderDbHelper dbHelper;
-    private Book currentBook = null;
 
     public Database(Context context) {
-        this.context = context;
         this.dbHelper = new BookReaderDbHelper(context);
     }
 
     /**
-     * Dummy method, example & test use only
+     * Add one book from book database object
+     *
+     * @param book the book to save in the database
+     * @return true if operation was successful, false otherwise
      */
-    public boolean addBook() {
-        // Gets the data repository in write mode
+    public boolean addBook(Book book) {
         db = dbHelper.getWritableDatabase();
 
-        // Create a new map of values, where column names are the keys
         ContentValues values = new ContentValues();
-        values.put(BookContract.BookEntry.COLUMN_ISBN_10, "1853260312");
-        values.put(BookContract.BookEntry.COLUMN_ISBN_13, "9781853260315");
-        values.put(BookContract.BookEntry.COLUMN_NAME_TITLE, "20 000 miles under the sea");
-        values.put(BookContract.BookEntry.COLUMN_NAME_SUBTITLE, "I hate my life");
+        if (book.getIsbn10() != null)
+            values.put(BookContract.BookEntry.COLUMN_NAME_ISBN_10, book.getIsbn10());
 
-        // Insert the new row, returning the primary key value of the new row
+        if (book.getIsbn13() != null)
+            values.put(BookContract.BookEntry.COLUMN_NAME_ISBN_13, book.getIsbn13());
+
+        if (book.getTitle() != null)
+            values.put(BookContract.BookEntry.COLUMN_NAME_TITLE, book.getTitle());
+
+        if (book.getAuthor() != null)
+            values.put(BookContract.BookEntry.COLUMN_NAME_AUTHOR, book.getAuthor());
+
+        if (book.getPublishedDate() != null)
+            values.put(BookContract.BookEntry.COLUMN_NAME_PUBLISHED_DATE, book.getPublishedDate());
+
+        if (book.getDescription() != null)
+            values.put(BookContract.BookEntry.COLUMN_NAME_DESCRIPTION, book.getDescription());
+
+        if (book.getPageCount() != null)
+            values.put(BookContract.BookEntry.COLUMN_NAME_PAGE_COUNT, book.getPageCount());
+
+        if (book.getMaturityRating() != null)
+            values.put(BookContract.BookEntry.COLUMN_NAME_MATURITY_RATING, book.getMaturityRating());
+
+        if (book.getLanguage() != null)
+            values.put(BookContract.BookEntry.COLUMN_NAME_LANGUAGE, book.getLanguage());
+
+        if (book.getCover() != null)
+            values.put(BookContract.BookEntry.COLUMN_NAME_COVER, book.getCover()); //ToDo convert remote url to local uri
+
         long newRowId = db.insert(BookContract.BookEntry.TABLE_NAME, null, values);
+        Log.d("SQL", "Added new row in table books with id " + newRowId);
         db.close();
         return true;
     }
@@ -50,27 +74,66 @@ public class Database {
      * <p>
      * Return all books in "book" database
      *
-     * @return ArrayList<String>
+     * @return ArrayList<Book> all books in database
      */
-    public ArrayList<String> getAllBooks() {
+    public ArrayList<Book> getAllBooks() {
         db = dbHelper.getReadableDatabase();
 
-        // Define a projection that specifies which columns from the database
-        // you will actually use after this query.
-        String[] projection = {
+        String[] projection = { //Can be used in query, not yet though
                 BookContract.BookEntry._ID,
-                BookContract.BookEntry.COLUMN_ISBN_10,
-                BookContract.BookEntry.COLUMN_ISBN_13,
+                BookContract.BookEntry.COLUMN_NAME_ISBN_10,
+                BookContract.BookEntry.COLUMN_NAME_ISBN_13,
                 BookContract.BookEntry.COLUMN_NAME_TITLE,
-                BookContract.BookEntry.COLUMN_NAME_SUBTITLE
+                BookContract.BookEntry.COLUMN_NAME_AUTHOR,
+                BookContract.BookEntry.COLUMN_NAME_PUBLISHED_DATE,
+                BookContract.BookEntry.COLUMN_NAME_DESCRIPTION,
+                BookContract.BookEntry.COLUMN_NAME_PAGE_COUNT,
+                BookContract.BookEntry.COLUMN_NAME_MATURITY_RATING,
+                BookContract.BookEntry.COLUMN_NAME_LANGUAGE,
+                BookContract.BookEntry.COLUMN_NAME_COVER //ToDo local
         };
 
         Cursor cursor = db.rawQuery("SELECT * FROM " + BookContract.BookEntry.TABLE_NAME, null);
-        ArrayList<String> values = new ArrayList<>();
+        ArrayList<Book> values = new ArrayList<>();
         if (cursor.moveToFirst()) {
+            Log.d("SQL", "Book table contains " + cursor.getColumnCount() + " columns named :");
+            for (int i = 0; i < cursor.getColumnCount(); i++) {
+                Log.d("SQL", cursor.getColumnNames()[i]);
+            }
             while (!cursor.isAfterLast()) {
-                String name = cursor.getString(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_TITLE));
-                values.add(name);
+                Book book = new Book();
+
+                if (!cursor.isNull(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_TITLE)))
+                    book.setTitle(cursor.getString(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_TITLE)));
+
+                if (!cursor.isNull(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_AUTHOR)))
+                    book.setAuthor(cursor.getString(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_AUTHOR)));
+
+                if (!cursor.isNull(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_PUBLISHED_DATE)))
+                    book.setPublishedDate(cursor.getString(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_PUBLISHED_DATE)));
+
+                if (!cursor.isNull(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_DESCRIPTION)))
+                    book.setDescription(cursor.getString(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_DESCRIPTION)));
+
+                if (!cursor.isNull(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_ISBN_10)))
+                    book.setIsbn10(cursor.getString(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_ISBN_10)));
+
+                if (!cursor.isNull(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_ISBN_13)))
+                    book.setIsbn13(cursor.getString(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_ISBN_13)));
+
+                if (!cursor.isNull(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_PAGE_COUNT)))
+                    book.setPageCount(cursor.getString(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_PAGE_COUNT)));
+
+                if (!cursor.isNull(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_MATURITY_RATING)))
+                    book.setMaturityRating(cursor.getString(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_MATURITY_RATING)));
+
+                if (!cursor.isNull(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_LANGUAGE)))
+                    book.setLanguage(cursor.getString(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_LANGUAGE)));
+
+                if (!cursor.isNull(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_COVER)))
+                    book.setCover(cursor.getString(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_COVER)));
+
+                values.add(book);
                 cursor.moveToNext();
             }
         }

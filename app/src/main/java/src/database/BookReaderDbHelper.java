@@ -3,12 +3,16 @@ package src.database;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
 import static src.database.BookContract.SQL_CREATE_ENTRIES;
-import static src.database.BookContract.SQL_DELETE_ENTRIES;
+import static src.database.BookContract.SQL_DROP_ALL_TABLES;
 
 /**
- * Created by Adrien on 16/02/2017.
+ * Database helper class
+ *
+ * @author Adrien
+ * @version 1.00
  */
 
 public class BookReaderDbHelper extends SQLiteOpenHelper {
@@ -20,17 +24,39 @@ public class BookReaderDbHelper extends SQLiteOpenHelper {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
+    /**
+     * Called when database is created, execute SQL creation
+     *
+     * @param db the database
+     */
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(SQL_CREATE_ENTRIES);
     }
 
+    /**
+     * Called when database schema version changes
+     * and oldVersion < newVersion
+     *
+     * @param db         the database
+     * @param oldVersion the old schema version
+     * @param newVersion the new schema version
+     */
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // This database is only a cache for online data, so its upgrade policy is
-        // to simply to discard the data and start over
-        db.execSQL(SQL_DELETE_ENTRIES);
-        onCreate(db);
+        if (oldVersion != newVersion) {
+            Log.d("SQL", "New database version found. Wiping existing data " + oldVersion + " -> " + newVersion);
+            db.execSQL(SQL_DROP_ALL_TABLES);
+            onCreate(db);
+        }
     }
 
+    /**
+     * Called when database schema version changes
+     * and oldVersion > newVersion
+     *
+     * @param db         the database
+     * @param oldVersion the old schema version
+     * @param newVersion the new schema version
+     */
     public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         onUpgrade(db, oldVersion, newVersion);
     }

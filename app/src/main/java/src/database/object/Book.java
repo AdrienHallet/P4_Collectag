@@ -35,6 +35,15 @@ public class Book {
     }
 
     /**
+     * Create a new book by its title
+     *
+     * @param title book's title
+     */
+    public Book(String title) {
+        this.title = title;
+    }
+
+    /**
      * Create a book with specified arguments
      */
     public Book(String title, String author, String publishedDate, String description, String isbn10, String isbn13, String pageCount, String maturityRating, String language, String cover) {
