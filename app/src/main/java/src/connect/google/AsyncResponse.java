@@ -6,12 +6,13 @@ import src.database.object.Book;
 
 /**
  * Any class that handles book requests must implement it
- * and handle the response in an overrode 'processFinish' method
+ * and handle the response in an overrode 'researchFinish' method
  *
  * @author Adrien
- * @version 1.00, 17/02/2017
+ * @version 1.01, 17/02/2017
+ *          Changelog : name refactoring (issue with threaded application)
  */
 
 public interface AsyncResponse {
-    void processFinish(ArrayList<Book> output);
+    void researchFinish(ArrayList<Book> output);
 }
