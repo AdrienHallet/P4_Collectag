@@ -8,10 +8,14 @@ import android.util.Log;
 
 import java.util.ArrayList;
 
+import src.commons.ImageHelper;
 import src.database.object.Book;
 
 /**
- * Created by Adrien on 16/02/2017.
+ * Interaction class with the database
+ *
+ * @author Adrien
+ * @version 2.00
  */
 
 public class Database {
@@ -61,7 +65,7 @@ public class Database {
             values.put(BookContract.BookEntry.COLUMN_NAME_LANGUAGE, book.getLanguage());
 
         if (book.getCover() != null)
-            values.put(BookContract.BookEntry.COLUMN_NAME_COVER, book.getCover()); //ToDo convert remote url to local uri
+            values.put(BookContract.BookEntry.COLUMN_NAME_COVER, ImageHelper.getBytes(book.getCover()));
 
         long newRowId = db.insert(BookContract.BookEntry.TABLE_NAME, null, values);
         Log.d("SQL", "Added new row in table books with id " + newRowId);
@@ -90,7 +94,7 @@ public class Database {
                 BookContract.BookEntry.COLUMN_NAME_PAGE_COUNT,
                 BookContract.BookEntry.COLUMN_NAME_MATURITY_RATING,
                 BookContract.BookEntry.COLUMN_NAME_LANGUAGE,
-                BookContract.BookEntry.COLUMN_NAME_COVER //ToDo local
+                BookContract.BookEntry.COLUMN_NAME_COVER
         };
 
         Cursor cursor = db.rawQuery("SELECT * FROM " + BookContract.BookEntry.TABLE_NAME, null);
@@ -131,7 +135,7 @@ public class Database {
                     book.setLanguage(cursor.getString(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_LANGUAGE)));
 
                 if (!cursor.isNull(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_COVER)))
-                    book.setCover(cursor.getString(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_COVER)));
+                    book.setCover(ImageHelper.getImage(cursor.getBlob(cursor.getColumnIndex(BookContract.BookEntry.COLUMN_NAME_COVER))));
 
                 values.add(book);
                 cursor.moveToNext();

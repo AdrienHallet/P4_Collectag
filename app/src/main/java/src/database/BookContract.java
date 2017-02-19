@@ -6,9 +6,7 @@ import android.provider.BaseColumns;
  * Contract class for the database object 'Book'
  *
  * @author Adrien
- * @version 2.00
- *          <p>
- *          //Todo version 3 : allow to save cover image
+ * @version 3.00 (now blobbed)
  */
 
 class BookContract {
@@ -27,7 +25,7 @@ class BookContract {
                     BookEntry.COLUMN_NAME_PAGE_COUNT + " TEXT," +
                     BookEntry.COLUMN_NAME_MATURITY_RATING + " TEXT," +
                     BookEntry.COLUMN_NAME_LANGUAGE + " TEXT," +
-                    BookEntry.COLUMN_NAME_COVER + " TEXT)"; //ToDo blob this
+                    BookEntry.COLUMN_NAME_COVER + " BLOB)";
 
     /**
      * Delete all tables, columns and data
@@ -53,6 +51,6 @@ class BookContract {
         static final String COLUMN_NAME_PAGE_COUNT = "page_count";
         static final String COLUMN_NAME_MATURITY_RATING = "maturity_rating";
         static final String COLUMN_NAME_LANGUAGE = "language";
-        static final String COLUMN_NAME_COVER = "cover"; //Todo recover image (blob me)
+        static final String COLUMN_NAME_COVER = "cover";
     }
 }

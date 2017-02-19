@@ -1,5 +1,6 @@
 package src.database.object;
 
+import android.graphics.Bitmap;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -25,7 +26,8 @@ public class Book {
     private String pageCount;
     private String maturityRating;
     private String language;
-    private String cover;
+    private String coverUrl;
+    private Bitmap cover;
 
     /**
      * Empty constructor
@@ -46,7 +48,7 @@ public class Book {
     /**
      * Create a book with specified arguments
      */
-    public Book(String title, String author, String publishedDate, String description, String isbn10, String isbn13, String pageCount, String maturityRating, String language, String cover) {
+    public Book(String title, String author, String publishedDate, String description, String isbn10, String isbn13, String pageCount, String maturityRating, String language, Bitmap cover) {
         this.title = title;
         this.author = author;
         this.publishedDate = publishedDate;
@@ -75,7 +77,7 @@ public class Book {
                 this.pageCount = volume.optString("pageCount");
                 this.maturityRating = volume.optString("maturityRating");
                 this.language = volume.optString("language");
-                this.cover = volume.optJSONObject("imageLinks").optString("thumbnail");
+                this.coverUrl = volume.optJSONObject("imageLinks").optString("thumbnail");
 
                 if (volume.has("industryIdentifiers")) {
                     JSONArray identifiers = volume.getJSONArray("industryIdentifiers");
@@ -91,9 +93,13 @@ public class Book {
                         }
                     }
                 }
+
+
             }
         } catch (JSONException e) {
             Log.e("Book constructor", e.toString());
+        } catch (Exception e) {
+            Log.e("Book constructor", "Unexpected error "+e.toString());
         }
     }
 
@@ -184,11 +190,19 @@ public class Book {
         this.language = language;
     }
 
-    public String getCover() {
+    public String getCoverUrl() {
+        return coverUrl;
+    }
+
+    public void setCoverUrl(String coverUrl) {
+        this.coverUrl = coverUrl;
+    }
+
+    public Bitmap getCover() {
         return cover;
     }
 
-    public void setCover(String cover) {
+    public void setCover(Bitmap cover) {
         this.cover = cover;
     }
 }

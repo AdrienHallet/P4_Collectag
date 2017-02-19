@@ -15,12 +15,12 @@ import static src.database.BookContract.SQL_DROP_ALL_TABLES;
  * @version 1.00
  */
 
-public class BookReaderDbHelper extends SQLiteOpenHelper {
+class BookReaderDbHelper extends SQLiteOpenHelper {
     // If you change the database schema, you must increment the database version.
-    public static final int DATABASE_VERSION = 2;
-    public static final String DATABASE_NAME = "collectag.db";
+    static final int DATABASE_VERSION = 3;
+    static final String DATABASE_NAME = "collectag.db";
 
-    public BookReaderDbHelper(Context context) {
+    BookReaderDbHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
