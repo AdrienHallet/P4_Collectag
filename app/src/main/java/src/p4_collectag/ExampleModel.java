@@ -13,4 +13,9 @@ class ExampleModel implements ViewModel {
     public int getDisplayImage() {
         return R.drawable.ic_menu_gallery;
     }
+
+    @Override
+    public ItemCategory getCategory() {
+        return ItemCategory.ROOT_CATEGORY;
+    }
 }

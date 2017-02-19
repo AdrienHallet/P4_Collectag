@@ -14,4 +14,9 @@ public interface ViewModel {
 
     @DrawableRes
     int getDisplayImage();
+
+    /**
+     * @return ItemCategory. null if {@link ItemCategory#ROOT_CATEGORY}.
+     */
+    ItemCategory getCategory();
 }

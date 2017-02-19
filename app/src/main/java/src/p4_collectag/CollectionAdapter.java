@@ -132,6 +132,18 @@ class CollectionAdapter extends RecyclerView.Adapter<CollectionAdapter.ViewHolde
         return selectedItems.size();
     }
 
+    /**
+     * Returns the position of the provided item.
+     *
+     * @param item The item to query for position.
+     *
+     * @return The position of the provided item or {@link SortedList#INVALID_POSITION} if item is not in the
+     * list.
+     */
+    int findDisplayedPosition(ViewModel item) {
+        return displayedList.indexOf(item);
+    }
+
     @Override
     public CollectionAdapter.ViewHolder onCreateViewHolder(ViewGroup parent,
                                                            int viewType) {

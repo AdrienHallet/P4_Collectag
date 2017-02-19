@@ -16,6 +16,7 @@ import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.util.SortedList;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
@@ -53,6 +54,7 @@ public class MainActivity extends AppCompatActivity
     Menu context_menu;
     boolean isMultiSelect = false;
     private CollectionAdapter mAdapter;
+    private RecyclerView mRecyclerView;
     private ActionMode.Callback mActionModeCallback = new ActionMode.Callback() {
         @Override
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
@@ -109,7 +111,7 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
         setSupportActionBar((Toolbar) findViewById(R.id.toolbar));
 
-        RecyclerView mRecyclerView = (RecyclerView) findViewById(R.id.list);
+        mRecyclerView = (RecyclerView) findViewById(R.id.list);
 
         mRecyclerView.setHasFixedSize(false);
 
@@ -135,6 +137,11 @@ public class MainActivity extends AppCompatActivity
             @Override
             public int getDisplayImage() {
                 return R.drawable.ic_menu_gallery;
+            }
+
+            @Override
+            public ItemCategory getCategory() {
+                return ItemCategory.ROOT_CATEGORY;
             }
         };
         itemSet.add(model);
@@ -225,6 +232,7 @@ public class MainActivity extends AppCompatActivity
                 List<ViewModel> allItems = new ArrayList<>();
                 allItems.addAll(itemSet);
                 mAdapter.filter(allItems, newText);
+                mRecyclerView.scrollToPosition(0);
                 return true;
             }
         });
@@ -234,6 +242,7 @@ public class MainActivity extends AppCompatActivity
                 List<ViewModel> allItems = new ArrayList<>();
                 allItems.addAll(itemSet);
                 mAdapter.filter(allItems, "");
+                mRecyclerView.scrollToPosition(0);
                 return true;
             }
         });
@@ -250,10 +259,15 @@ public class MainActivity extends AppCompatActivity
         if (id == R.id.nav_scan) {
             scanNow();
         } else if (id == R.id.nav_add) {
-            snackThis("Added debug item!");//TODO
+            //TODO Remove it once proper adding GUI&Back end are done.
+            snackThis("Added debug item!");
             ViewModel model = new ExampleModel();
             itemSet.add(model);
             mAdapter.add(model);
+            int pos = mAdapter.findDisplayedPosition(model);
+            if(pos != SortedList.INVALID_POSITION) {
+                mRecyclerView.scrollToPosition(pos);
+            }
         } else if (id == R.id.nav_gallery) {
             snackThis("Pressed button!");//TODO
         } else if (id == R.id.nav_slideshow) {
