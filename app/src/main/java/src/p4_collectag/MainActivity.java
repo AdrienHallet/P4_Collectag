@@ -94,8 +94,6 @@ public class MainActivity extends AppCompatActivity
         StaticEnvironment.setStaticEnvironment(this);
         Database database = new Database(getApplicationContext());
 
-        database.addBook();
-
         setContentView(R.layout.activity_main);
         setSupportActionBar((Toolbar) findViewById(R.id.toolbar));
 
