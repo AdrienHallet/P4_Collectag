@@ -9,7 +9,7 @@ import android.provider.BaseColumns;
  * @version 3.00 (now blobbed)
  */
 
-class BookContract {
+class Contract {
 
     /**
      * Create all tables and columns
@@ -34,7 +34,7 @@ class BookContract {
             "DROP TABLE IF EXISTS " + BookEntry.TABLE_NAME;
 
 
-    private BookContract() {
+    private Contract() {
     }
 
     /**

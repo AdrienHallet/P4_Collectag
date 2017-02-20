@@ -99,7 +99,7 @@ public class Book {
         } catch (JSONException e) {
             Log.e("Book constructor", e.toString());
         } catch (Exception e) {
-            Log.e("Book constructor", "Unexpected error "+e.toString());
+            Log.e("Book constructor", "Unexpected error " + e.toString());
         }
     }
 
@@ -116,6 +116,38 @@ public class Book {
         } catch (JSONException e) {
             return "";
         }
+    }
+
+    /**
+     * Differentiate the book with a second one
+     *
+     * @param compare to book to compare
+     * @return the counter of all different elements (absence is considered equals)
+     */
+    public int differentiate(Book compare) {
+        int counter = 0;
+        if (this.isbn10 != null && compare.isbn10 != null && !this.isbn10.equals(compare.isbn10))
+            counter++;
+        if (this.isbn13 != null && compare.isbn13 != null && !this.isbn13.equals(compare.isbn13))
+            counter++;
+        if (this.title != null && compare.title != null && !this.title.equals(compare.title))
+            counter++;
+        if (this.author != null && compare.author != null && !this.author.equals(compare.author))
+            counter++;
+        if (this.publishedDate != null && compare.publishedDate != null && !this.publishedDate.equals(compare.publishedDate))
+            counter++;
+        if (this.description != null && compare.description != null && !this.description.equals(compare.description))
+            counter++;
+        if (this.pageCount != null && compare.pageCount != null && !this.pageCount.equals(compare.pageCount))
+            counter++;
+        if (this.maturityRating != null && compare.maturityRating != null && !this.maturityRating.equals(compare.maturityRating))
+            counter++;
+        if (this.language != null && compare.language != null && !this.language.equals(compare.language))
+            counter++;
+        if (this.cover != null && compare.cover != null && !this.cover.equals(compare.cover))
+            counter++;
+
+        return counter;
     }
 
     public String getTitle() {
@@ -205,4 +237,5 @@ public class Book {
     public void setCover(Bitmap cover) {
         this.cover = cover;
     }
+
 }

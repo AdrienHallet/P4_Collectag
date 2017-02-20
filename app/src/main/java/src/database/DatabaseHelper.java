@@ -5,8 +5,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
-import static src.database.BookContract.SQL_CREATE_ENTRIES;
-import static src.database.BookContract.SQL_DROP_ALL_TABLES;
+import static src.database.Contract.SQL_CREATE_ENTRIES;
+import static src.database.Contract.SQL_DROP_ALL_TABLES;
 
 /**
  * Database helper class
@@ -15,12 +15,12 @@ import static src.database.BookContract.SQL_DROP_ALL_TABLES;
  * @version 1.00
  */
 
-class BookReaderDbHelper extends SQLiteOpenHelper {
+class DatabaseHelper extends SQLiteOpenHelper {
     // If you change the database schema, you must increment the database version.
     static final int DATABASE_VERSION = 3;
     static final String DATABASE_NAME = "collectag.db";
 
-    BookReaderDbHelper(Context context) {
+    DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
