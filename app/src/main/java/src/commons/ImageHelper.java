@@ -1,38 +1,78 @@
 package src.commons;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.util.Log;
 
-import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
-
-import cz.msebera.android.httpclient.util.ByteArrayBuffer;
 
 /**
- * Created by Adrien on 17/02/2017.
+ * Helper class. It allows bitmap and byte arrays handling
+ *
+ * @author Adrien
+ * @version 1.02
+ *          Changelog : fixed url conversion error
  */
 
 public class ImageHelper {
+    //How many bytes of an image should be processed
+    private static final int CHUNK_SIZE = 4096;
 
-    public static byte[] getImageFromURL(String url) {
+    /**
+     * Convert remote image into byte array
+     *
+     * @param url the resource url
+     * @return a byte array representing the image
+     */
+    public static byte[] getImageFromURL(String url) throws BookException {
+        URL url_object;
         try {
-            URL imageUrl = new URL(url);
-            URLConnection ucon = imageUrl.openConnection();
+            url_object = new URL(url);
+        } catch (MalformedURLException e) {
+            Log.d("Image Helper", "Could not translate given string in URL :\n" + e.toString());
+            throw new BookException(BookException.NO_COVER_FOUND);
+        }
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-            InputStream is = ucon.getInputStream();
-            BufferedInputStream bis = new BufferedInputStream(is);
+        try {
+            byte[] chunk = new byte[CHUNK_SIZE];
+            int bytesRead;
+            InputStream stream = url_object.openStream();
 
-            ByteArrayBuffer baf = new ByteArrayBuffer(500);
-            int current;
-            while ((current = bis.read()) != -1) {
-                baf.append((byte) current);
+            while ((bytesRead = stream.read(chunk)) > 0) {
+                outputStream.write(chunk, 0, bytesRead);
             }
 
-            return baf.toByteArray();
-        } catch (Exception e) {
-            Log.d("ImageManager", "Error: " + e.toString());
+        } catch (IOException e) {
+            throw new BookException(BookException.NO_COVER_FOUND);
         }
-        return null;
+
+        return outputStream.toByteArray();
+    }
+
+    /**
+     * Bitmap image to byte array
+     *
+     * @param bitmap the image
+     * @return a byte array representing the image
+     */
+    public static byte[] getBytes(Bitmap bitmap) {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 0, stream);
+        return stream.toByteArray();
+    }
+
+    /**
+     * Byte array to bitmap image
+     *
+     * @param image the byte array representing an image
+     * @return the corresponding Bitmap image
+     */
+    public static Bitmap getImage(byte[] image) {
+        return BitmapFactory.decodeByteArray(image, 0, image.length);
     }
 }

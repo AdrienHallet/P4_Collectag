@@ -17,6 +17,7 @@ import cz.msebera.android.httpclient.StatusLine;
 import cz.msebera.android.httpclient.client.HttpClient;
 import cz.msebera.android.httpclient.client.methods.HttpGet;
 import cz.msebera.android.httpclient.impl.client.HttpClientBuilder;
+import src.commons.ImageHelper;
 import src.database.object.Book;
 
 /**
@@ -32,12 +33,13 @@ import src.database.object.Book;
  * <h2>2. Execute request</h2>
  * <ul>
  * <li>Create new GetBookInfo</li>
+ * <li>Assign "delegate" to 'this' (UI Thread) (e.g. : myGetBookInfo.delegate = this)</li>
  * <li>Call method execute() method with the request String as parameter</li>
  * </ul>
  * <h2>3. Retrieve Book list</h2>
  * <ul>
  * <li>Your calling class must implement AsyncResponse interface</li>
- * <li>Call method get() on GetBookInfo object (timeout available)</li>
+ * <li>(optional) Call method get() on GetBookInfo object (timeout available)</li>
  * <li>Override method processFinish(ArrayList<src.database.object.Book> output)</li>
  * <li>Do something with the ArrayList of books</li>
  * <p>
@@ -47,12 +49,19 @@ import src.database.object.Book;
  * @version 1.00
  */
 
-public class GetBookInfo extends AsyncTask<String, Void, String> {
+public class GetBookInfo extends AsyncTask<String, Void, ArrayList<Book>> {
 
     public AsyncResponse delegate = null;
 
+    private ArrayList<Book> result = new ArrayList<>();
+
     @Override
-    protected String doInBackground(String... bookURLs) { //... = arbitrary number of args
+    protected void onPreExecute() {
+        super.onPreExecute();
+    }
+
+    @Override
+    protected ArrayList<Book> doInBackground(String... bookURLs) { //... = arbitrary number of args
         StringBuilder bookBuilder = new StringBuilder();
 
         for (String bookSearchURL : bookURLs) {
@@ -81,23 +90,29 @@ public class GetBookInfo extends AsyncTask<String, Void, String> {
 
 
         }
-        return bookBuilder.toString();
+
+        parseBooks(bookBuilder.toString());
+        return result;
     }
 
-    protected void onPostExecute(String result) {
+    private void parseBooks(String json) {
         try {
-            JSONObject resultObject = new JSONObject(result);
+            JSONObject resultObject = new JSONObject(json);
             JSONArray bookArray = resultObject.getJSONArray("items");
-            ArrayList<Book> bookList = new ArrayList<>();
             for (int i = 0; i < bookArray.length(); i++) {
                 JSONObject bookObject = bookArray.getJSONObject(i);
                 src.database.object.Book book = new src.database.object.Book(bookObject);
-                bookList.add(book);
+                book.setCover(ImageHelper.getImage(ImageHelper.getImageFromURL(book.getCoverUrl())));
+                result.add(book);
             }
-            delegate.processFinish(bookList);
         } catch (Exception e) {
-            e.printStackTrace();
-
+            Log.e("Book Parsing Error", e.toString());
+            if (result.isEmpty())
+                delegate.researchNullResult();
         }
+    }
+
+    protected void onPostExecute(ArrayList<Book> result) {
+        delegate.researchFinish(result);
     }
 }
