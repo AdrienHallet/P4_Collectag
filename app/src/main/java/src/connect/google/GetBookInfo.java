@@ -90,35 +90,29 @@ public class GetBookInfo extends AsyncTask<String, Void, ArrayList<Book>> {
 
 
         }
+
         parseBooks(bookBuilder.toString());
-        Log.d("Thread check", "1");
         return result;
     }
 
     private void parseBooks(String json) {
         try {
-            Log.d("Thread check", "2");
             JSONObject resultObject = new JSONObject(json);
             JSONArray bookArray = resultObject.getJSONArray("items");
-            ArrayList<Book> bookList = new ArrayList<>();
             for (int i = 0; i < bookArray.length(); i++) {
                 JSONObject bookObject = bookArray.getJSONObject(i);
                 src.database.object.Book book = new src.database.object.Book(bookObject);
-                Log.d("Thread check", "3");
                 book.setCover(ImageHelper.getImage(ImageHelper.getImageFromURL(book.getCoverUrl())));
-                Log.d("Thread check", "4");
-                bookList.add(book);
+                result.add(book);
             }
-            result = bookList;
         } catch (Exception e) {
             Log.e("Book Parsing Error", e.toString());
-
+            if (result.isEmpty())
+                delegate.researchNullResult();
         }
     }
 
     protected void onPostExecute(ArrayList<Book> result) {
-        Log.d("Background Thread", "onPostExecute called");
-        //ToDo handle null array exception (or throw it to main thread ?)
         delegate.researchFinish(result);
     }
 }

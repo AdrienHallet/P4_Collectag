@@ -28,13 +28,13 @@ public class ImageHelper {
      * @param url the resource url
      * @return a byte array representing the image
      */
-    public static byte[] getImageFromURL(String url) {
+    public static byte[] getImageFromURL(String url) throws BookException {
         URL url_object;
         try {
             url_object = new URL(url);
         } catch (MalformedURLException e) {
             Log.d("Image Helper", "Could not translate given string in URL :\n" + e.toString());
-            return null; //Prevent openStream() NullPointerException
+            throw new BookException(BookException.NO_COVER_FOUND);
         }
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
@@ -48,8 +48,7 @@ public class ImageHelper {
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
-            return null;
+            throw new BookException(BookException.NO_COVER_FOUND);
         }
 
         return outputStream.toByteArray();
