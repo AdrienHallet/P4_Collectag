@@ -16,7 +16,7 @@ import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.util.SortedList;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
@@ -26,36 +26,34 @@ import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.Toast;
 
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import src.database.Database;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
-    private final Set<ViewModel> itemSet = new HashSet<>();//TODO implement ViewModel for Books, DVDs..
-    private final Comparator<ViewModel> alphabeticalComparator = new Comparator<ViewModel>() {
+    private final List<Category> modelList = new ArrayList<>();//TODO implement ViewModel for Books, DVDs..
+    private final List<Category> selectedCategories = new ArrayList<>();
+    private final List<BaseItem> selectedItems = new ArrayList<>();
+    private final Comparator<BaseItem> alphabeticalComparator = new Comparator<BaseItem>() {
         @Override
-        public int compare(ViewModel a, ViewModel b) {
-            return getResources().getString(a.getDisplayText()).compareTo(
-                    getResources().getString(b.getDisplayText()));
+        public int compare(BaseItem a, BaseItem b) {
+            return a.getDisplayText().compareTo(
+                    b.getDisplayText());
         }
     };
-    ActionMode mActionMode;
     Menu context_menu;
-    boolean isMultiSelect = false;
     private CollectionAdapter mAdapter;
     private RecyclerView mRecyclerView;
-    private ActionMode.Callback mActionModeCallback = new ActionMode.Callback() {
+    public ActionMode.Callback mActionModeCallback = new ActionMode.Callback() {
         @Override
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
             // Inflate a menu resource providing context menu items
@@ -74,8 +72,8 @@ public class MainActivity extends AppCompatActivity
         public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
             switch (item.getItemId()) {
                 case R.id.action_delete:
-                    itemSet.removeAll(mAdapter.deleteSelection());
-                    mActionMode.setTitle("Items selected : " + mAdapter.getSelectedCount());
+                    mAdapter.deleteSelection();
+                    mAdapter.mActionMode.setTitle("Items selected : " + mAdapter.getSelectedCount());
                     return true;
                 default:
                     return false;
@@ -84,8 +82,8 @@ public class MainActivity extends AppCompatActivity
 
         @Override
         public void onDestroyActionMode(ActionMode mode) {
-            mActionMode = null;
-            isMultiSelect = false;
+            mAdapter.mActionMode = null;
+            mAdapter.isMultiSelect = false;
             mAdapter.clearSelection();
         }
     };
@@ -98,87 +96,28 @@ public class MainActivity extends AppCompatActivity
 
         database.addBook();
 
-        ArrayList<String> myBooks;
-        myBooks = database.getAllBooks();
-
-        for (String string : myBooks) {
-            Context context = getApplicationContext();
-            int duration = Toast.LENGTH_SHORT;
-        }
-
-
-        /// BEGIN
         setContentView(R.layout.activity_main);
         setSupportActionBar((Toolbar) findViewById(R.id.toolbar));
 
-        mRecyclerView = (RecyclerView) findViewById(R.id.list);
-
-        mRecyclerView.setHasFixedSize(false);
-
-        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(this);
-        mRecyclerView.setLayoutManager(mLayoutManager);
-
-        mAdapter = new CollectionAdapter(this, alphabeticalComparator);
-        mRecyclerView.setAdapter(mAdapter);
-
-        //FIXME This is a DEBUG LIST
-        itemSet.clear();
-        for (int i = 0; i < 2; i++) {
-            ViewModel model = new ExampleModel();
-            itemSet.add(model);
-            mAdapter.add(model);
+        mRecyclerView = (RecyclerView) findViewById(R.id.main_recycler);
+        // RecyclerView has some built in animations to it, using the DefaultItemAnimator.
+        // Specifically when you call notifyItemChanged() it does a fade animation for the changing
+        // of the data in the ViewHolder. If you would like to disable this you can use the following:
+        RecyclerView.ItemAnimator animator = mRecyclerView.getItemAnimator();
+        if (animator instanceof DefaultItemAnimator) {
+            ((DefaultItemAnimator) animator).setSupportsChangeAnimations(false);
         }
-        ViewModel model = new ViewModel() {
-            @Override
-            public int getDisplayText() {
-                return R.string.nav_gallery;//FIXME Test name for filtering
+
+        for(int i = 0; i < 3; i++) {
+            ArrayList<BaseItem> list = new ArrayList<>();
+            for(int j = 0; j < 2; j++) {
+                BaseItem debugItem = new BaseItem("Item "+i+"_"+j, R.drawable.ic_person_black_36dp) {};
+                list.add(debugItem);
             }
-
-            @Override
-            public int getDisplayImage() {
-                return R.drawable.ic_menu_gallery;
-            }
-
-            @Override
-            public ItemCategory getCategory() {
-                return ItemCategory.ROOT_CATEGORY;
-            }
-        };
-        itemSet.add(model);
-        mAdapter.add(model);
-
-        mRecyclerView.addOnItemTouchListener(new RecyclerItemClickListener(this, mRecyclerView, new RecyclerItemClickListener.OnItemClickListener() {
-            @Override
-            public void onItemClick(View view, int position) {
-                if (isMultiSelect) {
-                    if (mActionMode != null) {
-                        mAdapter.toggleSelection(position);
-                        mActionMode.setTitle("Items selected : " + mAdapter.getSelectedCount());
-                    }
-                } else {
-                    //TODO DISPLAY ITEM DATA
-                    ViewModel item = mAdapter.get(position);
-                    Toast.makeText(getApplicationContext(), "Data : " + getResources().getString(item.getDisplayText()), Toast.LENGTH_SHORT).show();
-                }
-            }
-
-
-            @Override
-            public void onItemLongClick(View view, int position) {
-                if (!isMultiSelect) {
-                    mAdapter.clearSelection();
-                    isMultiSelect = true;
-
-                    if (mActionMode == null) {
-                        mActionMode = startActionMode(mActionModeCallback);
-                    }
-                }
-                if (mActionMode != null) {
-                    mAdapter.toggleSelection(position);
-                    mActionMode.setTitle("Items selected : " + mAdapter.getSelectedCount());
-                }
-            }
-        }));
+            modelList.add(new Category("My Category", list));
+        }
+        setNewAdapter();
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -190,6 +129,22 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
     }
 
+    private void setNewAdapter() {
+        mAdapter = new CollectionAdapter(this, modelList, selectedCategories, selectedItems);
+        mRecyclerView.setAdapter(mAdapter);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        mAdapter.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        mAdapter.onRestoreInstanceState(savedInstanceState);
+    }
 
     @Override
     public void onBackPressed() {
@@ -229,9 +184,7 @@ public class MainActivity extends AppCompatActivity
                 if (newText == null) {
                     return false;
                 }
-                List<ViewModel> allItems = new ArrayList<>();
-                allItems.addAll(itemSet);
-                mAdapter.filter(allItems, newText);
+                mAdapter.filter(newText);
                 mRecyclerView.scrollToPosition(0);
                 return true;
             }
@@ -239,9 +192,7 @@ public class MainActivity extends AppCompatActivity
         searchView.setOnCloseListener(new SearchView.OnCloseListener() {
             @Override
             public boolean onClose() {
-                List<ViewModel> allItems = new ArrayList<>();
-                allItems.addAll(itemSet);
-                mAdapter.filter(allItems, "");
+                mAdapter.endFilter();
                 mRecyclerView.scrollToPosition(0);
                 return true;
             }
@@ -260,14 +211,11 @@ public class MainActivity extends AppCompatActivity
             scanNow();
         } else if (id == R.id.nav_add) {
             //TODO Remove it once proper adding GUI&Back end are done.
+            //FIXME not working
             snackThis("Added debug item!");
-            ViewModel model = new ExampleModel();
-            itemSet.add(model);
-            mAdapter.add(model);
-            int pos = mAdapter.findDisplayedPosition(model);
-            if(pos != SortedList.INVALID_POSITION) {
-                mRecyclerView.scrollToPosition(pos);
-            }
+            BaseItem debugItem = new BaseItem("Debug Name", R.drawable.ic_person_black_36dp) {};
+            modelList.add(new Category("Added Category", Collections.singletonList(debugItem)));
+            setNewAdapter();
         } else if (id == R.id.nav_gallery) {
             snackThis("Pressed button!");//TODO
         } else if (id == R.id.nav_slideshow) {
@@ -328,7 +276,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], @NonNull int[] grantResults) {
+                                           @NonNull String permissions[], @NonNull int[] grantResults) {
         switch (requestCode) {
             //TODO
             case 1337: {

@@ -1,205 +1,141 @@
 package src.p4_collectag;
 
-import android.content.Context;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.util.SortedList;
-import android.support.v7.widget.RecyclerView;
+import android.view.ActionMode;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.TextView;
+import android.widget.Toast;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
+import com.thoughtbot.expandablerecyclerview.ExpandableRecyclerViewAdapter;
+import com.thoughtbot.expandablerecyclerview.models.ExpandableGroup;
+import com.thoughtbot.expandablerecyclerview.models.ExpandableListPosition;
+
 import java.util.List;
-import java.util.Set;
 
 /**
  * Represent the displayed list.
  *
  * @author Julien Amalaberque
  */
-class CollectionAdapter extends RecyclerView.Adapter<CollectionAdapter.ViewHolder> {
-    private final Set<ViewModel> selectedItems = new HashSet<>();
-    private Context context;
-    private Comparator<ViewModel> mComparator;//TODO this could be changed to sort differently
-    private final SortedList<ViewModel> displayedList = new SortedList<>(ViewModel.class, new SortedList.Callback<ViewModel>() {
-        @Override
-        public int compare(ViewModel a, ViewModel b) {
-            return mComparator.compare(a, b);
-        }
+public class CollectionAdapter extends ExpandableRecyclerViewAdapter<CategoryViewHolder, BaseItemViewHolder> {
+    private MainActivity mActivity;
+    public ActionMode mActionMode;
+    private final List<Category> selectedCategories;
+    private final List<BaseItem> selectedItems;
+    boolean isMultiSelect = false;
 
-        @Override
-        public void onInserted(int position, int count) {
-            notifyItemRangeInserted(position, count);
-        }
-
-        @Override
-        public void onRemoved(int position, int count) {
-            notifyItemRangeRemoved(position, count);
-        }
-
-        @Override
-        public void onMoved(int fromPosition, int toPosition) {
-            notifyItemMoved(fromPosition, toPosition);
-        }
-
-        @Override
-        public void onChanged(int position, int count) {
-            notifyItemRangeChanged(position, count);
-        }
-
-        @Override
-        public boolean areContentsTheSame(ViewModel oldItem, ViewModel newItem) {
-            return oldItem.equals(newItem);
-        }
-
-        @Override
-        public boolean areItemsTheSame(ViewModel item1, ViewModel item2) {
-            return item1.equals(item2);
-        }
-    });
-
-    CollectionAdapter(Context contextIn, Comparator<ViewModel> mComparatorIn) {
-        context = contextIn;
-        mComparator = mComparatorIn;
+    CollectionAdapter(MainActivity contextIn, List<? extends ExpandableGroup> groups, List<Category> selectedCategories, List<BaseItem> selectedItems) {
+        super(groups);
+        mActivity = contextIn;
+        this.selectedCategories = selectedCategories;
+        this.selectedItems = selectedItems;
     }
 
-    public ViewModel get(int index) {
-        return displayedList.get(index);
+    @Override
+    public CategoryViewHolder onCreateGroupViewHolder(ViewGroup parent, int viewType) {
+
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.list_item_category, parent, false);
+        return new CategoryViewHolder(view, this);
     }
 
-    public void add(ViewModel model) {
-        displayedList.add(model);
+    @Override
+    public BaseItemViewHolder onCreateChildViewHolder(ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.list_item_base, parent, false);
+        return new BaseItemViewHolder(view, this);
     }
 
-    public void addAll(List<ViewModel> models) {
-        displayedList.addAll(models);
-    }
-
-    public void removeAll(List<ViewModel> models) {
-        displayedList.beginBatchedUpdates();
-        for (ViewModel model : models) {
-            displayedList.remove(model);
-        }
-        displayedList.endBatchedUpdates();
-    }
-
-    public void replaceAll(List<ViewModel> models) {
-        displayedList.beginBatchedUpdates();
-        for (int i = displayedList.size() - 1; i >= 0; i--) {
-            final ViewModel model = displayedList.get(i);
-            if (!models.contains(model)) {
-                displayedList.remove(model);
-            }
-        }
-        displayedList.addAll(models);
-        displayedList.endBatchedUpdates();
-    }
-
-    List<ViewModel> deleteSelection() {
-        List<ViewModel> deletedItems = new ArrayList<>();
-        for (int i = 0; i < displayedList.size(); i++) {
-            ViewModel listItem = displayedList.get(i);
-            if (selectedItems.contains(listItem)) {
-                deletedItems.add(listItem);
-            }
-        }
-        removeAll(deletedItems);
+    void deleteSelection() {
+        expandableList.groups.removeAll(selectedCategories);
+        for(ExpandableGroup group : expandableList.groups) group.getItems().removeAll(selectedItems);
+        notifyDataSetChanged();
         clearSelection();
-        return deletedItems;
     }
 
-    void toggleSelection(int position) {
-        ViewModel item = displayedList.get(position);
-        if (selectedItems.contains(item)) {
-            selectedItems.remove(item);
-        } else {
-            selectedItems.add(item);
+    void toggleSelection(int flatPosition) {
+        ExpandableListPosition position = expandableList.getUnflattenedPosition(flatPosition);
+        switch (getItemViewType(flatPosition)) {
+            case ExpandableListPosition.GROUP:
+                Category category = ((Category) expandableList.getExpandableGroup(position));
+                if(selectedCategories.contains(category)) selectedCategories.remove(category);
+                else selectedCategories.add(category);
+                break;
+            case ExpandableListPosition.CHILD:
+                BaseItem item = ((Category) expandableList.getExpandableGroup(position)).getItems().get(position.childPos);
+                if(selectedItems.contains(item)) selectedItems.remove(item);
+                else selectedItems.add(item);
+                break;
+            default:
+                throw new IllegalArgumentException("viewType is not valid : "+position);
         }
-        notifyItemChanged(position);
+        notifyItemChanged(flatPosition);
+        if (mActionMode != null) {
+            mActionMode.setTitle("Items selected : " + getSelectedCount());
+        }
     }
 
     void clearSelection() {
+        selectedCategories.clear();
         selectedItems.clear();
         notifyDataSetChanged();
     }
 
     int getSelectedCount() {
-        return selectedItems.size();
-    }
-
-    /**
-     * Returns the position of the provided item.
-     *
-     * @param item The item to query for position.
-     *
-     * @return The position of the provided item or {@link SortedList#INVALID_POSITION} if item is not in the
-     * list.
-     */
-    int findDisplayedPosition(ViewModel item) {
-        return displayedList.indexOf(item);
+        return selectedCategories.size() + selectedItems.size();
     }
 
     @Override
-    public CollectionAdapter.ViewHolder onCreateViewHolder(ViewGroup parent,
-                                                           int viewType) {
-        View v = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_row, parent, false);
-        return new ViewHolder(v);
-    }
-
-    @Override
-    public void onBindViewHolder(final ViewHolder holder, int position) {
-        // set the data in items
-        holder.mTextView.setText(displayedList.get(position).getDisplayText());
-        holder.mImageView.setImageResource(displayedList.get(position).getDisplayImage());
-
-        ViewModel item = displayedList.get(position);
+    public void onBindChildViewHolder(BaseItemViewHolder holder, int flatPosition, ExpandableGroup group, int childIndex) {
+        BaseItem item = ((Category) group).getItems().get(childIndex);
+        holder.mTextView.setText(item.getDisplayText());
+        holder.mImageView.setImageResource(item.getDisplayImage());
         if (selectedItems.contains(item))
-            holder.mLayout.setBackgroundColor(ContextCompat.getColor(context, R.color.list_item_selected_state));
+            holder.mLayout.setBackgroundColor(ContextCompat.getColor(mActivity, R.color.list_item_selected_state));
         else
-            holder.mLayout.setBackgroundColor(ContextCompat.getColor(context, R.color.list_item_normal_state));
+            holder.mLayout.setBackgroundColor(ContextCompat.getColor(mActivity, R.color.list_item_normal_state));
     }
 
     @Override
-    public int getItemCount() {
-        return displayedList.size();
+    public void onBindGroupViewHolder(CategoryViewHolder holder, int flatPosition, ExpandableGroup group) {
+        Category item = (Category) group;
+        holder.name.setText(item.getTitle());
+        holder.mImageView.setImageResource(R.drawable.ic_menu_gallery);//TODO category icon
+        if (selectedCategories.contains(item))
+            holder.mLayout.setBackgroundColor(ContextCompat.getColor(mActivity, R.color.list_item_selected_state));
+        else
+            holder.mLayout.setBackgroundColor(ContextCompat.getColor(mActivity, R.color.list_item_normal_state));
     }
 
-    void filter(List<ViewModel> allItems, String query) {
-        final String lowerCaseQuery = query.toLowerCase();
 
-        final List<ViewModel> filteredModelList = new ArrayList<>();
-        for (int i = 0; i < allItems.size(); i++) {
-            final ViewModel model = allItems.get(i);
-            final String text = context.getResources().getString(model.getDisplayText()).toLowerCase();
-            if (text.contains(lowerCaseQuery)) {
-                filteredModelList.add(model);
+    void filter(String query) {
+        final String lowerCaseQuery = query.toLowerCase();
+        //TODO filtering
+    }
+    public void endFilter() {
+        //TODO filtering
+    }
+
+    public void onItemClick(int flatPosition) {
+        ExpandableListPosition position = expandableList.getUnflattenedPosition(flatPosition);
+        BaseItem item = ((Category) expandableList.getExpandableGroup(position)).getItems().get(position.childPos);
+        Toast.makeText(mActivity, "Data : " + item.getDisplayText(), Toast.LENGTH_SHORT).show();
+    }
+
+    public void enableSelectionMode() {
+        if (!isMultiSelect) {
+            clearSelection();
+            isMultiSelect = true;
+            Toast.makeText(mActivity, "Selection mode enabled", Toast.LENGTH_SHORT).show();
+
+            if (mActionMode == null) {
+                mActionMode = mActivity.startActionMode(mActivity.mActionModeCallback);
             }
         }
-        replaceAll(filteredModelList);
-        //mBinding.recyclerView.scrollToPosition(0);
-    }
-
-    /**
-     * Provide a reference to the views for each data item
-     * Complex data items may need more than one view per item, and
-     * you provide access to all the views for a data item in a view holder
-     */
-    static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView mTextView;
-        ImageView mImageView;
-        LinearLayout mLayout;
-
-        ViewHolder(View viewIn) {
-            super(viewIn);
-            mTextView = (TextView) viewIn.findViewById(R.id.name);
-            mImageView = (ImageView) viewIn.findViewById(R.id.image);
-            mLayout = (LinearLayout) viewIn.findViewById(R.id.item_row);
+        if (mActionMode != null) {
+            mActionMode.setTitle("Items selected : " + getSelectedCount());
         }
     }
+
 }
