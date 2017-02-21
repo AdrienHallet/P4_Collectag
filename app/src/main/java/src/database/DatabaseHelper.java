@@ -5,8 +5,12 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
-import static src.database.Contract.SQL_CREATE_ENTRIES;
-import static src.database.Contract.SQL_DROP_ALL_TABLES;
+import static src.database.Contract.SQL_CREATE_BOOK_ENTRIES;
+import static src.database.Contract.SQL_CREATE_CATEGORY_ENTRIES;
+import static src.database.Contract.SQL_CREATE_CATEGORY_RELATIONS;
+import static src.database.Contract.SQL_DROP_BOOK_TABLE;
+import static src.database.Contract.SQL_DROP_CATEGORY_RELATIONS;
+import static src.database.Contract.SQL_DROP_CATEGORY_TABLE;
 
 /**
  * Database helper class
@@ -17,11 +21,20 @@ import static src.database.Contract.SQL_DROP_ALL_TABLES;
 
 class DatabaseHelper extends SQLiteOpenHelper {
     // If you change the database schema, you must increment the database version.
-    static final int DATABASE_VERSION = 4;
-    static final String DATABASE_NAME = "collectag.db";
+    private static final int DATABASE_VERSION = 11;
+    private static final String DATABASE_NAME = "collectag.db";
+
+    private static DatabaseHelper mInstance = null;
 
     DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
+    }
+
+    public static DatabaseHelper getInstance(Context context) {
+        if (mInstance == null) {
+            mInstance = new DatabaseHelper(context.getApplicationContext());
+        }
+        return mInstance;
     }
 
     /**
@@ -30,7 +43,9 @@ class DatabaseHelper extends SQLiteOpenHelper {
      * @param db the database
      */
     public void onCreate(SQLiteDatabase db) {
-        db.execSQL(SQL_CREATE_ENTRIES);
+        db.execSQL(SQL_CREATE_BOOK_ENTRIES);
+        db.execSQL(SQL_CREATE_CATEGORY_ENTRIES);
+        db.execSQL(SQL_CREATE_CATEGORY_RELATIONS);
     }
 
     /**
@@ -44,7 +59,9 @@ class DatabaseHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if (oldVersion != newVersion) {
             Log.d("SQL", "New database version found. Wiping existing data " + oldVersion + " -> " + newVersion);
-            db.execSQL(SQL_DROP_ALL_TABLES);
+            db.execSQL(SQL_DROP_BOOK_TABLE);
+            db.execSQL(SQL_DROP_CATEGORY_TABLE);
+            db.execSQL(SQL_DROP_CATEGORY_RELATIONS);
             onCreate(db);
         }
     }

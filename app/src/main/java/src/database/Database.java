@@ -11,12 +11,17 @@ import java.util.ArrayList;
 
 import src.commons.ImageHelper;
 import src.database.object.Book;
+import src.database.object.CategoryItem;
 
 /**
  * Interaction class with the database
  *
  * @author Adrien
  * @version 2.00
+ *          Changelog :
+ *          <ul>
+ *          <li>2.00 : Now supports category</li>
+ *          </ul>
  */
 
 public class Database {
@@ -25,14 +30,16 @@ public class Database {
     private DatabaseHelper dbHelper;
 
     public Database(Context context) {
-        this.dbHelper = new DatabaseHelper(context);
+        this.dbHelper = DatabaseHelper.getInstance(context);
     }
+
+    /* BOOK */
 
     /**
      * Add one book from book database object
      *
      * @param book the book to save in the database
-     * @return true if operation was successful, false otherwise
+     * @return the id of inserted row
      */
     public long addBook(Book book) {
         db = dbHelper.getWritableDatabase();
@@ -42,13 +49,12 @@ public class Database {
         long newRowId = db.insert(Contract.BookEntry.TABLE_NAME, null, values);
         Log.d("SQL", "Added new row in table books with id " + newRowId);
         db.close();
+        book.setRowId(newRowId);
         return newRowId;
     }
 
     private ContentValues getContentValues(Book book) {
         ContentValues values = new ContentValues();
-        values.put(Contract.BookEntry.COLUMN_NAME_ID, book.getRowId());
-
         if (book.getIsbn10() != null)
             values.put(Contract.BookEntry.COLUMN_NAME_ISBN_10, book.getIsbn10());
 
@@ -91,15 +97,15 @@ public class Database {
      */
     public boolean updateBook(Book book) {
 
-        if (book.getRowId() < 1) return false;
+        if (book.getRowId() < 0) return false;
 
         db = dbHelper.getWritableDatabase();
 
         ContentValues values = getContentValues(book);
-
-        db.update(Contract.BookEntry.TABLE_NAME, values, Contract.BookEntry.COLUMN_NAME_ID + "=" + book.getRowId(), null);
+        String[] args = {String.valueOf(book.getRowId())};
+        long updatedRow = db.update(Contract.BookEntry.TABLE_NAME, values, "rowid = ?", args);
         db.close();
-        return true;
+        return book.getRowId() == updatedRow;
     }
 
     /**
@@ -109,9 +115,9 @@ public class Database {
      * @return true if operation was successful, false otherwise
      */
     public boolean removeBook(Book book) {
-        if (book.getRowId() < 1) return false;
+        if (book.getRowId() < 0) return false;
         db = dbHelper.getWritableDatabase();
-        db.delete(Contract.BookEntry.TABLE_NAME, Contract.BookEntry.COLUMN_NAME_ID + "=" + book.getRowId(), null);
+        db.delete(Contract.BookEntry.TABLE_NAME, "rowid=" + book.getRowId(), null);
         db.close();
         return true;
     }
@@ -126,20 +132,6 @@ public class Database {
     public ArrayList<Book> getAllBooks() {
         db = dbHelper.getReadableDatabase();
 
-        String[] projection = { //Can be used in query, not yet though
-                Contract.BookEntry._ID,
-                Contract.BookEntry.COLUMN_NAME_ISBN_10,
-                Contract.BookEntry.COLUMN_NAME_ISBN_13,
-                Contract.BookEntry.COLUMN_NAME_TITLE,
-                Contract.BookEntry.COLUMN_NAME_AUTHOR,
-                Contract.BookEntry.COLUMN_NAME_PUBLISHED_DATE,
-                Contract.BookEntry.COLUMN_NAME_DESCRIPTION,
-                Contract.BookEntry.COLUMN_NAME_PAGE_COUNT,
-                Contract.BookEntry.COLUMN_NAME_MATURITY_RATING,
-                Contract.BookEntry.COLUMN_NAME_LANGUAGE,
-                Contract.BookEntry.COLUMN_NAME_COVER
-        };
-
         Cursor cursor = db.rawQuery("SELECT * FROM " + Contract.BookEntry.TABLE_NAME, null);
         ArrayList<Book> values = new ArrayList<>();
         if (cursor.moveToFirst()) {
@@ -149,8 +141,8 @@ public class Database {
             }
             while (!cursor.isAfterLast()) {
                 Book book = new Book();
-
-                book.setRowId(cursor.getColumnIndex(Contract.BookEntry.COLUMN_NAME_ID));
+                long rowid = cursor.getLong(0);
+                book.setRowId(rowid + 1);
 
                 if (!cursor.isNull(cursor.getColumnIndex(Contract.BookEntry.COLUMN_NAME_TITLE)))
                     book.setTitle(cursor.getString(cursor.getColumnIndex(Contract.BookEntry.COLUMN_NAME_TITLE)));
@@ -187,7 +179,81 @@ public class Database {
             }
         }
         cursor.close();
+        db.close();
+        return values;
+    }
 
+    /* CATEGORY */
+
+    /**
+     * Add given category to the database<br />
+     * <b>Warning : if name already exists, we will not add category</b>
+     *
+     * @param categoryItem the category to add
+     * @return the id of created row in database
+     */
+    public long addCategory(CategoryItem categoryItem) {
+        db = dbHelper.getWritableDatabase();
+
+        ContentValues values = getContentValues(categoryItem);
+
+        long newRowId = db.insert(Contract.CategoryEntry.TABLE_NAME, null, values);
+        Log.d("SQL", "Added new row in table category with id " + newRowId);
+        db.close();
+        categoryItem.setRowId(newRowId);
+        return newRowId;
+    }
+
+    public boolean updateCategory(CategoryItem categoryItem) {
+        if (categoryItem.getRowId() < 0) return false;
+
+        db = dbHelper.getWritableDatabase();
+
+        ContentValues values = getContentValues(categoryItem);
+        String[] args = {String.valueOf(categoryItem.getRowId())};
+        long updatedRow = db.update(Contract.CategoryEntry.TABLE_NAME, values, "rowid = ?", args);
+        db.close();
+        return categoryItem.getRowId() == updatedRow;
+    }
+
+    private ContentValues getContentValues(CategoryItem categoryItem) {
+        ContentValues values = new ContentValues();
+
+        if (categoryItem.getTitle() != null && categoryItem.getTitle().trim() != "")
+            values.put(Contract.CategoryEntry.COLUMN_NAME_TITLE, categoryItem.getTitle());
+
+        return values;
+    }
+
+    /**
+     * Get all categories in database
+     *
+     * @return an arraylist containing the categories item found
+     */
+    public ArrayList<CategoryItem> getAllCategories() {
+        db = dbHelper.getReadableDatabase();
+
+        Cursor cursor = db.rawQuery("SELECT * FROM " + Contract.CategoryEntry.TABLE_NAME, null);
+        ArrayList<CategoryItem> values = new ArrayList<>();
+        if (cursor.moveToFirst()) {
+            Log.d("SQL", "Category table contains " + cursor.getColumnCount() + " columns named :");
+            for (int i = 0; i < cursor.getColumnCount(); i++) {
+                Log.d("SQL", cursor.getColumnNames()[i]);
+            }
+            while (!cursor.isAfterLast()) {
+                CategoryItem categoryItem = new CategoryItem();
+
+                categoryItem.setRowId(cursor.getLong(0) + 1);
+
+                if (!cursor.isNull(cursor.getColumnIndex(Contract.CategoryEntry.COLUMN_NAME_TITLE)))
+                    categoryItem.setTitle(cursor.getString(cursor.getColumnIndex(Contract.CategoryEntry.COLUMN_NAME_TITLE)));
+
+                values.add(categoryItem);
+                cursor.moveToNext();
+            }
+        }
+        cursor.close();
+        db.close();
         return values;
     }
 
@@ -200,8 +266,10 @@ public class Database {
 
     public void wipeDatabase() {
         db = dbHelper.getWritableDatabase();
-        db.execSQL(Contract.SQL_DROP_ALL_TABLES);
-        db.execSQL(Contract.SQL_CREATE_ENTRIES);
+        db.execSQL(Contract.SQL_DROP_BOOK_TABLE);
+        db.execSQL(Contract.SQL_DROP_CATEGORY_TABLE);
+        db.execSQL(Contract.SQL_CREATE_BOOK_ENTRIES);
+        db.execSQL(Contract.SQL_CREATE_CATEGORY_ENTRIES);
         db.close();
     }
 

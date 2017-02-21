@@ -32,7 +32,7 @@ public class Book implements BaseItem {
     private String language;
     private String coverUrl;
     private Bitmap cover;
-    private long rowId; //Database field only
+    private long rowId = -1; //Database field only
 
     /**
      * Empty constructor
@@ -48,7 +48,6 @@ public class Book implements BaseItem {
      */
     public Book(String title) {
         this.title = title;
-        this.rowId = 0;
     }
 
     /**
@@ -65,7 +64,6 @@ public class Book implements BaseItem {
         this.maturityRating = maturityRating;
         this.language = language;
         this.cover = cover;
-        this.rowId = 0;
     }
 
     /**
@@ -85,7 +83,6 @@ public class Book implements BaseItem {
                 this.maturityRating = volume.optString("maturityRating");
                 this.language = volume.optString("language");
                 this.coverUrl = volume.optJSONObject("imageLinks").optString("thumbnail");
-                this.rowId = 0;
 
                 if (volume.has("industryIdentifiers")) {
                     JSONArray identifiers = volume.getJSONArray("industryIdentifiers");
