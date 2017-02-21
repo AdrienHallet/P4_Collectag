@@ -12,6 +12,7 @@ import java.util.ArrayList;
  * Created by Adrien on 16/02/2017.
  */
 
+@Deprecated
 public class Book {
     private String openLibraryId;
     private String author;

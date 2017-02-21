@@ -16,6 +16,7 @@ class Contract {
      */
     static final String SQL_CREATE_ENTRIES =
             "CREATE TABLE " + BookEntry.TABLE_NAME + " (" +
+                    BookEntry.COLUMN_NAME_ID + "NUMERIC PRIMARY KEY," +
                     BookEntry.COLUMN_NAME_ISBN_13 + " TEXT UNIQUE ON CONFLICT REPLACE," +
                     BookEntry.COLUMN_NAME_ISBN_10 + " TEXT UNIQUE ON CONFLICT REPLACE," +
                     BookEntry.COLUMN_NAME_TITLE + " TEXT," +
@@ -42,6 +43,7 @@ class Contract {
      */
     static class BookEntry implements BaseColumns {
         static final String TABLE_NAME = "books";
+        static final String COLUMN_NAME_ID = "_id";
         static final String COLUMN_NAME_ISBN_13 = "isbn_13";
         static final String COLUMN_NAME_ISBN_10 = "isbn_10";
         static final String COLUMN_NAME_TITLE = "title";

@@ -17,7 +17,7 @@ import static src.database.Contract.SQL_DROP_ALL_TABLES;
 
 class DatabaseHelper extends SQLiteOpenHelper {
     // If you change the database schema, you must increment the database version.
-    static final int DATABASE_VERSION = 3;
+    static final int DATABASE_VERSION = 4;
     static final String DATABASE_NAME = "collectag.db";
 
     DatabaseHelper(Context context) {

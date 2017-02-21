@@ -21,9 +21,8 @@ import src.database.object.Book;
 
 public class Database {
 
-    SQLiteDatabase db;
+    private SQLiteDatabase db;
     private DatabaseHelper dbHelper;
-    private static final int SMART_REMOVAL_ALLOWED_ERRORS = 0;
 
     public Database(Context context) {
         this.dbHelper = new DatabaseHelper(context);
@@ -35,10 +34,21 @@ public class Database {
      * @param book the book to save in the database
      * @return true if operation was successful, false otherwise
      */
-    public boolean addBook(Book book) {
+    public long addBook(Book book) {
         db = dbHelper.getWritableDatabase();
 
+        ContentValues values = getContentValues(book);
+
+        long newRowId = db.insert(Contract.BookEntry.TABLE_NAME, null, values);
+        Log.d("SQL", "Added new row in table books with id " + newRowId);
+        db.close();
+        return newRowId;
+    }
+
+    private ContentValues getContentValues(Book book) {
         ContentValues values = new ContentValues();
+        values.put(Contract.BookEntry.COLUMN_NAME_ID, book.getRowId());
+
         if (book.getIsbn10() != null)
             values.put(Contract.BookEntry.COLUMN_NAME_ISBN_10, book.getIsbn10());
 
@@ -69,8 +79,25 @@ public class Database {
         if (book.getCover() != null)
             values.put(Contract.BookEntry.COLUMN_NAME_COVER, ImageHelper.getBytes(book.getCover()));
 
-        long newRowId = db.insert(Contract.BookEntry.TABLE_NAME, null, values);
-        Log.d("SQL", "Added new row in table books with id " + newRowId);
+        return values;
+    }
+
+    /**
+     * Update the information in the book database<br />
+     * You can't update a book that is not already in the database
+     *
+     * @param book the book to update
+     * @return true if book could be updated, false if ID does not exist
+     */
+    public boolean updateBook(Book book) {
+
+        if (book.getRowId() < 1) return false;
+
+        db = dbHelper.getWritableDatabase();
+
+        ContentValues values = getContentValues(book);
+
+        db.update(Contract.BookEntry.TABLE_NAME, values, Contract.BookEntry.COLUMN_NAME_ID + "=" + book.getRowId(), null);
         db.close();
         return true;
     }
@@ -82,54 +109,11 @@ public class Database {
      * @return true if operation was successful, false otherwise
      */
     public boolean removeBook(Book book) {
+        if (book.getRowId() < 1) return false;
         db = dbHelper.getWritableDatabase();
-        if (book.getIsbn13() != null)
-            db.execSQL("DELETE FROM " + Contract.BookEntry.TABLE_NAME + " WHERE " + Contract.BookEntry.COLUMN_NAME_ISBN_13 + "='" + book.getIsbn13() + "'");
-
-        else if (book.getIsbn10() != null)
-            db.execSQL("DELETE FROM " + Contract.BookEntry.TABLE_NAME + " WHERE " + Contract.BookEntry.COLUMN_NAME_ISBN_10 + "='" + book.getIsbn10() + "'");
-        else {
-            db.close();
-            return smartRemoval(book);
-        }
-
+        db.delete(Contract.BookEntry.TABLE_NAME, Contract.BookEntry.COLUMN_NAME_ID + "=" + book.getRowId(), null);
         db.close();
-        return true; //FixMe : is it useful to check deletion
-    }
-
-    /**
-     * Smart deletion method when primary key cannot be used to get the book<br />
-     * This will remove the first book matching the parameter with the error margin 'SMART_REMOVAL_ALLOWED_ERRORS'
-     * Be careful, if you pass empty book, null match will occur (missing information is considered as same information)
-     *
-     * @param book to book to remove
-     * @return true if book has been safely deleted
-     */
-    private boolean smartRemoval(Book book) {
-        db = dbHelper.getWritableDatabase();
-        ArrayList<Book> bookList = getAllBooks();
-        for (Book current : bookList) {
-            int diff = current.differentiate(book);
-            if (diff <= SMART_REMOVAL_ALLOWED_ERRORS) {
-                if (current.getIsbn10() != null) {
-                    db.execSQL("DELETE FROM " + Contract.BookEntry.TABLE_NAME + " WHERE " + Contract.BookEntry.COLUMN_NAME_ISBN_10 + "='" + book.getIsbn10() + "'");
-                    return true;
-                } else if (current.getIsbn13() != null) {
-                    db.execSQL("DELETE FROM " + Contract.BookEntry.TABLE_NAME + " WHERE " + Contract.BookEntry.COLUMN_NAME_ISBN_13 + "='" + book.getIsbn13() + "'");
-                    return true;
-                } else if (current.getDescription() != null) {
-                    db.execSQL("DELETE FROM " + Contract.BookEntry.TABLE_NAME + " WHERE " + Contract.BookEntry.COLUMN_NAME_DESCRIPTION + "='" + book.getDescription() + "'");
-                    return true;
-                } else if (current.getTitle() != null) {
-                    db.execSQL("DELETE FROM " + Contract.BookEntry.TABLE_NAME + " WHERE " + Contract.BookEntry.COLUMN_NAME_TITLE + "='" + book.getTitle() + "'");
-                    return true;
-                } else
-                    return false;
-
-            }
-        }
-        db.close();
-        return false;
+        return true;
     }
 
     /**
@@ -165,6 +149,8 @@ public class Database {
             }
             while (!cursor.isAfterLast()) {
                 Book book = new Book();
+
+                book.setRowId(cursor.getColumnIndex(Contract.BookEntry.COLUMN_NAME_ID));
 
                 if (!cursor.isNull(cursor.getColumnIndex(Contract.BookEntry.COLUMN_NAME_TITLE)))
                     book.setTitle(cursor.getString(cursor.getColumnIndex(Contract.BookEntry.COLUMN_NAME_TITLE)));
