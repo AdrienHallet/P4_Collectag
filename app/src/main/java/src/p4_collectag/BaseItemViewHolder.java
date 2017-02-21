@@ -1,19 +1,24 @@
 package src.p4_collectag;
 
+import android.support.annotation.NonNull;
+import android.support.v4.content.ContextCompat;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import com.thoughtbot.expandablerecyclerview.viewholders.ChildViewHolder;
+import com.bignerdranch.expandablerecyclerview.ChildViewHolder;
+
 
 /**
  * @author Julien
  */
-class BaseItemViewHolder extends ChildViewHolder {
-    TextView mTextView;
-    ImageView mImageView;
-    FrameLayout mLayout;
+class BaseItemViewHolder extends ChildViewHolder<BaseItem> {
+    private static final int DEFAULT_ITEM_ICON = R.drawable.ic_menu_slideshow;
+    private TextView mTextView;
+    private ImageView mImageView;
+    private FrameLayout mLayout;
     private MainActivity mActivity;
 
     BaseItemViewHolder(View viewIn, MainActivity activity) {
@@ -24,28 +29,37 @@ class BaseItemViewHolder extends ChildViewHolder {
         mLayout = (FrameLayout) viewIn.findViewById(R.id.list_item_base);
         viewIn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                BaseItemViewHolder.this.handleClick();
+                if (mActivity.isMultiSelect) {
+                    if (mActivity.selectedItems.contains(getChild())) {
+                        mActivity.selectedItems.remove(getChild());
+                    } else {
+                        mActivity.selectedItems.add(getChild());
+                    }
+                    mActivity.notifySelectionChanged();
+                } else {
+                    Toast.makeText(mActivity, "Data : " + getChild().getDisplayText(), Toast.LENGTH_SHORT).show();
+                }
             }
         });
         viewIn.setOnLongClickListener(new View.OnLongClickListener() {
             public boolean onLongClick(View v) {
-                BaseItemViewHolder.this.handleLongClick();
+                mActivity.enableSelectionMode();
+                mActivity.notifySelectionChanged();
                 return true;
             }
         });
     }
 
-    private void handleClick() {
-        int flatPosition = getLayoutPosition();
-        if (mActivity.isMultiSelect) {
-            mActivity.mAdapter.toggleSelection(flatPosition);
+    void bind(@NonNull BaseItem child) {
+        mTextView.setText(child.getDisplayText());
+        if (child.getDisplayImage() != null) {
+            mImageView.setImageBitmap(child.getDisplayImage());
         } else {
-            mActivity.mAdapter.onItemClick(flatPosition);
+            mImageView.setImageResource(DEFAULT_ITEM_ICON);
         }
+        if (mActivity.selectedItems.contains(child))
+            mLayout.setBackgroundColor(ContextCompat.getColor(mActivity, R.color.list_item_selected_state));
+        else
+            mLayout.setBackgroundColor(ContextCompat.getColor(mActivity, R.color.list_item_normal_state));
     }
-
-    private void handleLongClick() {
-        mActivity.mAdapter.mActivity.enableSelectionMode();
-    }
-
 }

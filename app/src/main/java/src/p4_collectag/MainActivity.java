@@ -5,9 +5,7 @@ import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.os.Parcel;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
@@ -18,13 +16,12 @@ import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.view.ActionMode;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -32,7 +29,6 @@ import android.widget.Toast;
 
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
-import com.thoughtbot.expandablerecyclerview.models.ExpandableGroup;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -44,8 +40,8 @@ import src.database.object.Book;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
     private final List<Category> modelList = new ArrayList<>();//TODO implement ViewModel for Books, DVDs..
-    private final List<Category> selectedCategories = new ArrayList<>();
-    private final List<BaseItem> selectedItems = new ArrayList<>();
+    final List<Category> selectedCategories = new ArrayList<>();
+    final List<BaseItem> selectedItems = new ArrayList<>();
     private final Comparator<BaseItem> alphabeticalComparator = new Comparator<BaseItem>() {
         @Override
         public int compare(BaseItem a, BaseItem b) {
@@ -102,13 +98,6 @@ public class MainActivity extends AppCompatActivity
         setSupportActionBar((Toolbar) findViewById(R.id.toolbar));
 
         mRecyclerView = (RecyclerView) findViewById(R.id.main_recycler);
-        // RecyclerView has some built in animations to it, using the DefaultItemAnimator.
-        // Specifically when you call notifyItemChanged() it does a fade animation for the changing
-        // of the data in the ViewHolder. If you would like to disable this you can use the following:
-        RecyclerView.ItemAnimator animator = mRecyclerView.getItemAnimator();
-        if (animator instanceof DefaultItemAnimator) {
-            ((DefaultItemAnimator) animator).setSupportsChangeAnimations(false);
-        }
 
         List<BaseItem> loadedList = new ArrayList<>();
         loadedList.addAll(database.getAllBooks());
@@ -134,15 +123,6 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-    }
-
-    /**
-     * Could be performance heavy.
-     * Once the expanded recycler view library implements add&remove, this will not be used anymore.
-     */
-    private void refreshAdapter() {
-        mAdapter = new CollectionAdapter(this, modelList, selectedCategories, selectedItems);
-        mRecyclerView.swapAdapter(mAdapter, false);
     }
 
     @Override
@@ -226,7 +206,7 @@ public class MainActivity extends AppCompatActivity
             List<BaseItem> debugList = new ArrayList<>();
             debugList.add(new Book("How to debug with all the grace you can muster."));
             modelList.add(new Category("Debug category", debugList));
-            refreshAdapter();
+            mAdapter.notifyParentInserted(modelList.size() - 1);
         } else if (id == R.id.nav_gallery) {
             snackThis("Pressed button!");//TODO
         } else if (id == R.id.nav_slideshow) {
@@ -327,6 +307,7 @@ public class MainActivity extends AppCompatActivity
         if (mActionMode != null) {
             mActionMode.setTitle("Items selected : " + getSelectedCount());
         }
+        mAdapter.notifyDataSetChanged();
     }
 
     int getSelectedCount() {
@@ -340,15 +321,27 @@ public class MainActivity extends AppCompatActivity
      */
     void deleteSelection() {
         modelList.removeAll(selectedCategories);
-        for (ExpandableGroup<BaseItem> group : modelList) group.getItems().removeAll(selectedItems);
-        mAdapter.notifyDataSetChanged();
+        mAdapter.notifyParentDataSetChanged(true);
+        for(int i = 0; i < selectedItems.size(); i++){
+            BaseItem itemToDelete = selectedItems.get(i);
+            boolean itemFound = false;
+            for(int j = 0; j < modelList.size() && !itemFound; j++) {
+                List<BaseItem> group = modelList.get(j).getChildList();
+                for (int k = 0; k < group.size() && !itemFound; k++) {
+                    if (group.get(k) == itemToDelete) {
+                        group.remove(k);
+                        mAdapter.notifyChildRemoved(j, k);
+                        itemFound = true;
+                    }
+                }
+            }
+        }
         clearSelection();
     }
 
     void clearSelection() {
         selectedCategories.clear();
         selectedItems.clear();
-        mAdapter.notifyDataSetChanged();
         notifySelectionChanged();
     }
 
@@ -356,13 +349,12 @@ public class MainActivity extends AppCompatActivity
         if (!isMultiSelect) {
             clearSelection();
             isMultiSelect = true;
-            Toast.makeText(this, "Selection mode enabled", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Selection mode enabled", Toast.LENGTH_SHORT).show();//TODO DEBUG TOAST
 
             if (mActionMode == null) {
-                mActionMode = startActionMode(mActionModeCallback);
+                mActionMode = startSupportActionMode(mActionModeCallback);
             }
         }
-        notifySelectionChanged();
     }
 
     /// SELECTION METHODS END

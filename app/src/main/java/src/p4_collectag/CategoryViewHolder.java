@@ -1,19 +1,22 @@
 package src.p4_collectag;
 
+import android.support.annotation.NonNull;
+import android.support.v4.content.ContextCompat;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.thoughtbot.expandablerecyclerview.viewholders.GroupViewHolder;
+import com.bignerdranch.expandablerecyclerview.ParentViewHolder;
 
 /**
  * @author Julien Amalaberque
  */
-class CategoryViewHolder extends GroupViewHolder {
-    TextView name;
-    ImageView mImageView;
-    FrameLayout mLayout;
+class CategoryViewHolder extends ParentViewHolder<Category, BaseItem> {
+    private static final int CATEGORY_ICON = R.drawable.ic_menu_gallery;
+    private TextView name;
+    private ImageView mImageView;
+    private FrameLayout mLayout;
     private MainActivity mActivity;
 
     CategoryViewHolder(View view, MainActivity activity) {
@@ -22,30 +25,26 @@ class CategoryViewHolder extends GroupViewHolder {
         name = (TextView) view.findViewById(R.id.item_header_name);
         mImageView = (ImageView) view.findViewById(R.id.item_header_image);
         mLayout = (FrameLayout) view.findViewById(R.id.list_item_category);
-        view.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                CategoryViewHolder.this.handleClick();
-            }
-        });
         view.setOnLongClickListener(new View.OnLongClickListener() {
             public boolean onLongClick(View v) {
-                CategoryViewHolder.this.handleLongClick();
+                mActivity.enableSelectionMode();
+                if (mActivity.selectedCategories.contains(getParent())) {
+                    mActivity.selectedCategories.remove(getParent());
+                } else {
+                    mActivity.selectedCategories.add(getParent());
+                }
+                mActivity.notifySelectionChanged();
                 return true;
             }
         });
     }
 
-    private void handleClick() {
-        int flatPosition = getLayoutPosition();
-        if (mActivity.isMultiSelect) {
-            mActivity.mAdapter.toggleSelection(flatPosition);
-        } else {
-            mActivity.mAdapter.toggleGroup(flatPosition);
-        }
+    void bind(@NonNull Category group) {
+        name.setText(group.getTitle());
+        mImageView.setImageResource(CATEGORY_ICON);
+        if (mActivity.selectedCategories.contains(group))
+            mLayout.setBackgroundColor(ContextCompat.getColor(mActivity, R.color.list_item_selected_state));
+        else
+            mLayout.setBackgroundColor(ContextCompat.getColor(mActivity, R.color.list_item_normal_state));
     }
-
-    private void handleLongClick() {
-        mActivity.enableSelectionMode();
-    }
-
 }
