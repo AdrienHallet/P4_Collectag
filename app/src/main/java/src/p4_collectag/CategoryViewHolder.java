@@ -14,11 +14,11 @@ class CategoryViewHolder extends GroupViewHolder {
     TextView name;
     ImageView mImageView;
     FrameLayout mLayout;
-    CollectionAdapter mAdapter;
+    private MainActivity mActivity;
 
-    CategoryViewHolder(View view, CollectionAdapter adapter) {
+    CategoryViewHolder(View view, MainActivity activity) {
         super(view);
-        mAdapter = adapter;
+        mActivity = activity;
         name = (TextView) view.findViewById(R.id.item_header_name);
         mImageView = (ImageView) view.findViewById(R.id.item_header_image);
         mLayout = (FrameLayout) view.findViewById(R.id.list_item_category);
@@ -35,17 +35,17 @@ class CategoryViewHolder extends GroupViewHolder {
         });
     }
 
-    protected void handleClick() {
+    private void handleClick() {
         int flatPosition = getLayoutPosition();
-        if (mAdapter.isMultiSelect) {
-            mAdapter.toggleSelection(flatPosition);
+        if (mActivity.isMultiSelect) {
+            mActivity.mAdapter.toggleSelection(flatPosition);
         } else {
-            mAdapter.toggleGroup(flatPosition);
+            mActivity.mAdapter.toggleGroup(flatPosition);
         }
     }
 
-    protected void handleLongClick() {
-        mAdapter.enableSelectionMode();
+    private void handleLongClick() {
+        mActivity.enableSelectionMode();
     }
 
 }

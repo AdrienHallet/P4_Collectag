@@ -30,9 +30,9 @@ import android.widget.Toast;
 
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
+import com.thoughtbot.expandablerecyclerview.models.ExpandableGroup;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -50,9 +50,10 @@ public class MainActivity extends AppCompatActivity
                     b.getDisplayText());
         }
     };
+    public ActionMode mActionMode;
     Menu context_menu;
-    private CollectionAdapter mAdapter;
-    private RecyclerView mRecyclerView;
+    CollectionAdapter mAdapter;
+    boolean isMultiSelect = false;
     public ActionMode.Callback mActionModeCallback = new ActionMode.Callback() {
         @Override
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
@@ -72,8 +73,7 @@ public class MainActivity extends AppCompatActivity
         public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
             switch (item.getItemId()) {
                 case R.id.action_delete:
-                    mAdapter.deleteSelection();
-                    mAdapter.mActionMode.setTitle("Items selected : " + mAdapter.getSelectedCount());
+                    deleteSelection();
                     return true;
                 default:
                     return false;
@@ -82,11 +82,12 @@ public class MainActivity extends AppCompatActivity
 
         @Override
         public void onDestroyActionMode(ActionMode mode) {
-            mAdapter.mActionMode = null;
-            mAdapter.isMultiSelect = false;
-            mAdapter.clearSelection();
+            isMultiSelect = false;
+            clearSelection();
+            mActionMode = null;
         }
     };
+    private RecyclerView mRecyclerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -106,15 +107,17 @@ public class MainActivity extends AppCompatActivity
             ((DefaultItemAnimator) animator).setSupportsChangeAnimations(false);
         }
 
-        for(int i = 0; i < 3; i++) {
+        for (int i = 0; i < 3; i++) {
             ArrayList<BaseItem> list = new ArrayList<>();
-            for(int j = 0; j < 2; j++) {
-                BaseItem debugItem = new BaseItem("Item "+i+"_"+j, R.drawable.ic_person_black_36dp) {};
+            for (int j = 0; j < 2; j++) {
+                BaseItem debugItem = new BaseItem("Item " + i + "_" + j, R.drawable.ic_person_black_36dp) {
+                };
                 list.add(debugItem);
             }
             modelList.add(new Category("My Category", list));
         }
-        setNewAdapter();
+        mAdapter = new CollectionAdapter(this, modelList, selectedCategories, selectedItems);
+        mRecyclerView.setAdapter(mAdapter);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -127,9 +130,13 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
     }
 
-    private void setNewAdapter() {
+    /**
+     * Could be performance heavy.
+     * Once the expanded recycler view library implements add&remove, this will not be used anymore.
+     */
+    private void refreshAdapter() {
         mAdapter = new CollectionAdapter(this, modelList, selectedCategories, selectedItems);
-        mRecyclerView.setAdapter(mAdapter);
+        mRecyclerView.swapAdapter(mAdapter, false);
     }
 
     @Override
@@ -182,7 +189,7 @@ public class MainActivity extends AppCompatActivity
                 if (newText == null) {
                     return false;
                 }
-                mAdapter.filter(newText);
+                filter(newText);
                 mRecyclerView.scrollToPosition(0);
                 return true;
             }
@@ -190,7 +197,7 @@ public class MainActivity extends AppCompatActivity
         searchView.setOnCloseListener(new SearchView.OnCloseListener() {
             @Override
             public boolean onClose() {
-                mAdapter.endFilter();
+                endFilter();
                 mRecyclerView.scrollToPosition(0);
                 return true;
             }
@@ -211,9 +218,11 @@ public class MainActivity extends AppCompatActivity
             //TODO Remove it once proper adding GUI&Back end are done.
             //FIXME not working
             snackThis("Added debug item!");
-            BaseItem debugItem = new BaseItem("Debug Name", R.drawable.ic_person_black_36dp) {};
-            modelList.add(new Category("Added Category", Collections.singletonList(debugItem)));
-            setNewAdapter();
+            List<BaseItem> debugList = new ArrayList<>();
+            debugList.add(new BaseItem("Debug Item 1", R.drawable.ic_person_black_36dp));
+            //debugList.add(new BaseItem("Debug Item 2", R.drawable.ic_menu_slideshow));
+            modelList.add(new Category("Added Category", debugList));
+            refreshAdapter();
         } else if (id == R.id.nav_gallery) {
             snackThis("Pressed button!");//TODO
         } else if (id == R.id.nav_slideshow) {
@@ -306,5 +315,60 @@ public class MainActivity extends AppCompatActivity
     public void snackThis(String toasting) {
         Snackbar.make(findViewById(android.R.id.content), toasting, Snackbar.LENGTH_LONG)
                 .show();
+    }
+
+    /// SELECTION METHODS BEGIN
+
+    public void notifySelectionChanged() {
+        if (mActionMode != null) {
+            mActionMode.setTitle("Items selected : " + getSelectedCount());
+        }
+    }
+
+    int getSelectedCount() {
+        return selectedCategories.size() + selectedItems.size();
+    }
+
+    /**
+     * Delete selection from the dataset.
+     * Even an adapter with different dataset (like filtered) will delete what's selected
+     * from the main one.
+     */
+    void deleteSelection() {
+        modelList.removeAll(selectedCategories);
+        for (ExpandableGroup<BaseItem> group : modelList) group.getItems().removeAll(selectedItems);
+        mAdapter.notifyDataSetChanged();
+        clearSelection();
+    }
+
+    void clearSelection() {
+        selectedCategories.clear();
+        selectedItems.clear();
+        mAdapter.notifyDataSetChanged();
+        notifySelectionChanged();
+    }
+
+    public void enableSelectionMode() {
+        if (!isMultiSelect) {
+            clearSelection();
+            isMultiSelect = true;
+            Toast.makeText(this, "Selection mode enabled", Toast.LENGTH_SHORT).show();
+
+            if (mActionMode == null) {
+                mActionMode = startActionMode(mActionModeCallback);
+            }
+        }
+        notifySelectionChanged();
+    }
+
+    /// SELECTION METHODS END
+
+    void filter(String query) {
+        final String lowerCaseQuery = query.toLowerCase();
+        //TODO filtering
+    }
+
+    public void endFilter() {
+        //TODO filtering
     }
 }
