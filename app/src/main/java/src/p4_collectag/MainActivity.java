@@ -5,7 +5,9 @@ import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.os.Parcel;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
@@ -37,6 +39,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import src.database.Database;
+import src.database.object.Book;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -107,14 +110,17 @@ public class MainActivity extends AppCompatActivity
             ((DefaultItemAnimator) animator).setSupportsChangeAnimations(false);
         }
 
+        List<BaseItem> loadedList = new ArrayList<>();
+        loadedList.addAll(database.getAllBooks());
+        modelList.add(new Category("My selection",loadedList));
+
         for (int i = 0; i < 3; i++) {
             ArrayList<BaseItem> list = new ArrayList<>();
             for (int j = 0; j < 2; j++) {
-                BaseItem debugItem = new BaseItem("Item " + i + "_" + j, R.drawable.ic_person_black_36dp) {
-                };
+                BaseItem debugItem = new Book("How to cook humans. Tome "+(j+1));
                 list.add(debugItem);
             }
-            modelList.add(new Category("My Category", list));
+            modelList.add(new Category("My category", list));
         }
         mAdapter = new CollectionAdapter(this, modelList, selectedCategories, selectedItems);
         mRecyclerView.setAdapter(mAdapter);
@@ -216,12 +222,10 @@ public class MainActivity extends AppCompatActivity
             scanNow();
         } else if (id == R.id.nav_add) {
             //TODO Remove it once proper adding GUI&Back end are done.
-            //FIXME not working
             snackThis("Added debug item!");
             List<BaseItem> debugList = new ArrayList<>();
-            debugList.add(new BaseItem("Debug Item 1", R.drawable.ic_person_black_36dp));
-            //debugList.add(new BaseItem("Debug Item 2", R.drawable.ic_menu_slideshow));
-            modelList.add(new Category("Added Category", debugList));
+            debugList.add(new Book("How to debug with all the grace you can muster."));
+            modelList.add(new Category("Debug category", debugList));
             refreshAdapter();
         } else if (id == R.id.nav_gallery) {
             snackThis("Pressed button!");//TODO

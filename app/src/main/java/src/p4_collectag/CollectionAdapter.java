@@ -69,7 +69,12 @@ public class CollectionAdapter extends ExpandableRecyclerViewAdapter<CategoryVie
     public void onBindChildViewHolder(BaseItemViewHolder holder, int flatPosition, ExpandableGroup group, int childIndex) {
         BaseItem item = ((Category) group).getItems().get(childIndex);
         holder.mTextView.setText(item.getDisplayText());
-        holder.mImageView.setImageResource(item.getDisplayImage());
+        if(item.getDisplayImage() != null) {
+            holder.mImageView.setImageBitmap(item.getDisplayImage());
+        }
+        else {
+            holder.mImageView.setImageResource(R.drawable.ic_menu_slideshow);
+        }
         if (selectedItems.contains(item))
             holder.mLayout.setBackgroundColor(ContextCompat.getColor(mActivity, R.color.list_item_selected_state));
         else

@@ -1,12 +1,16 @@
 package src.database.object;
 
 import android.graphics.Bitmap;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.text.TextUtils;
 import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import src.p4_collectag.BaseItem;
 
 /**
  * Represents a book
@@ -15,7 +19,7 @@ import org.json.JSONObject;
  * @version 2.00
  */
 
-public class Book {
+public class Book implements BaseItem {
 
     private String title;
     private String author;
@@ -101,6 +105,16 @@ public class Book {
         } catch (Exception e) {
             Log.e("Book constructor", "Unexpected error " + e.toString());
         }
+    }
+
+    /**
+     * Implements serialization for the display
+     *
+     * @see Parcelable
+     */
+    private Book(Parcel in) {
+        setTitle(in.readString());
+        setCover(in.<Bitmap>readParcelable(Bitmap.class.getClassLoader()));
     }
 
     // Return comma separated author list when there is more than one author
@@ -238,4 +252,35 @@ public class Book {
         this.cover = cover;
     }
 
+    @Override
+    public String getDisplayText() {
+        return this.getTitle();
+    }
+
+    @Override
+    public Bitmap getDisplayImage() {
+        return this.getCover();
+    }
+
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(getTitle());
+        dest.writeParcelable(getCover(), flags);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    public static final Creator<Book> CREATOR = new Creator<Book>() {
+        @Override
+        public Book createFromParcel(Parcel in) {
+            return new Book(in);
+        }
+
+        @Override
+        public Book[] newArray(int size) {
+            return new Book[size];
+        }
+    };
 }
